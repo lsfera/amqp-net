@@ -37,12 +37,11 @@ namespace Amqp.Net.Client
         {
             return ChannelCloseFrame.Close(channelIndex)
                                     .SendAsync(channel)
-                                    .LogError()
                                     .Log(_ => $"SENT: {_.ToString()}")
                                     .Then(_ => bag.For(ChannelCloseOk.StaticDescriptor)
                                                   .WaitForAsync<ChannelCloseOkFrame>(_.Header.ChannelIndex))
-                                    .LogError()
-                                    .Log(_ => $"RECEIVED: {_.ToString()}");
+                                    .Log(_ => $"RECEIVED: {_.ToString()}")
+                                    .LogError();
         }
 
         public Task ExchangeDeclareAsync(String name,
@@ -62,12 +61,11 @@ namespace Amqp.Net.Client
                                                                      false,
                                                                      new Table(new Dictionary<String, Object>())));
             return frame.SendAsync(channel)
-                        .LogError()
                         .Log(_ => $"SENT: {_.ToString()}")
                         .Then(_ => bag.For(ExchangeDeclareOk.StaticDescriptor)
                                       .WaitForAsync<ExchangeDeclareOkFrame>(_.Header.ChannelIndex))
-                        .LogError()
-                        .Log(_ => $"RECEIVED: {_.ToString()}");
+                        .Log(_ => $"RECEIVED: {_.ToString()}")
+                        .LogError();
         }
 
         public Task ExchangeBindAsync(String destination,
@@ -83,12 +81,11 @@ namespace Amqp.Net.Client
                                                                false,
                                                                new Table(new Dictionary<String, Object>())));
             return frame.SendAsync(channel)
-                        .LogError()
                         .Log(_ => $"SENT: {_.ToString()}")
                         .Then(_ => bag.For(ExchangeBindOk.StaticDescriptor)
                                       .WaitForAsync<ExchangeBindOkFrame>(_.Header.ChannelIndex))
-                        .LogError()
-                        .Log(_ => $"RECEIVED: {_.ToString()}");
+                        .Log(_ => $"RECEIVED: {_.ToString()}")
+                        .LogError();
         }
 
         public Task ExchangeUnbindAsync(String destination,
@@ -104,12 +101,11 @@ namespace Amqp.Net.Client
                                                                    false,
                                                                    new Table(new Dictionary<String, Object>())));
             return frame.SendAsync(channel)
-                        .LogError()
                         .Log(_ => $"SENT: {_.ToString()}")
                         .Then(_ => bag.For(ExchangeUnbindOk.StaticDescriptor)
                                       .WaitForAsync<ExchangeUnbindOkFrame>(_.Header.ChannelIndex))
-                        .LogError()
-                        .Log(_ => $"RECEIVED: {_.ToString()}");
+                        .Log(_ => $"RECEIVED: {_.ToString()}")
+                        .LogError();
         }
 
         public Task ExchangeDeleteAsync(String name, Boolean ifUnused)
@@ -120,12 +116,11 @@ namespace Amqp.Net.Client
                                                                    ifUnused,
                                                                    false));
             return frame.SendAsync(channel)
-                        .LogError()
                         .Log(_ => $"SENT: {_.ToString()}")
                         .Then(_ => bag.For(ExchangeDeleteOk.StaticDescriptor)
                                       .WaitForAsync<ExchangeDeleteOkFrame>(_.Header.ChannelIndex))
-                        .LogError()
-                        .Log(_ => $"RECEIVED: {_.ToString()}");
+                        .Log(_ => $"RECEIVED: {_.ToString()}")
+                        .LogError();
         }
 
         public Task QueueDeclareAsync(String name,
@@ -143,12 +138,11 @@ namespace Amqp.Net.Client
                                                                false,
                                                                new Table(new Dictionary<String, Object>())));
             return frame.SendAsync(channel)
-                        .LogError()
                         .Log(_ => $"SENT: {_.ToString()}")
                         .Then(_ => bag.For(QueueDeclareOk.StaticDescriptor)
                                       .WaitForAsync<QueueDeclareOkFrame>(_.Header.ChannelIndex))
-                        .LogError()
-                        .Log(_ => $"RECEIVED: {_.ToString()}");
+                        .Log(_ => $"RECEIVED: {_.ToString()}")
+                        .LogError();
         }
 
         public Task QueueBindAsync(String queueName,
@@ -163,12 +157,11 @@ namespace Amqp.Net.Client
                                                          false,
                                                          new Table(new Dictionary<String, Object>())));
             return frame.SendAsync(channel)
-                        .LogError()
                         .Log(_ => $"SENT: {_.ToString()}")
                         .Then(_ => bag.For(QueueBindOk.StaticDescriptor)
                                       .WaitForAsync<QueueBindOkFrame>(_.Header.ChannelIndex))
-                        .LogError()
-                        .Log(_ => $"RECEIVED: {_.ToString()}");
+                        .Log(_ => $"RECEIVED: {_.ToString()}")
+                        .LogError();
         }
 
         public Task QueueUnbindAsync(String queueName,
@@ -182,12 +175,11 @@ namespace Amqp.Net.Client
                                                              routingKey,
                                                              new Table(new Dictionary<String, Object>())));
             return frame.SendAsync(channel)
-                        .LogError()
                         .Log(_ => $"SENT: {_.ToString()}")
                         .Then(_ => bag.For(QueueUnbindOk.StaticDescriptor)
                                       .WaitForAsync<QueueUnbindOkFrame>(_.Header.ChannelIndex))
-                        .LogError()
-                        .Log(_ => $"RECEIVED: {_.ToString()}");
+                        .Log(_ => $"RECEIVED: {_.ToString()}")
+                        .LogError();
         }
 
         public Task QueueDeleteAsync(String name,
@@ -201,12 +193,11 @@ namespace Amqp.Net.Client
                                                              ifEmpty,
                                                              false));
             return frame.SendAsync(channel)
-                        .LogError()
                         .Log(_ => $"SENT: {_.ToString()}")
                         .Then(_ => bag.For(QueueDeleteOk.StaticDescriptor)
                                       .WaitForAsync<QueueDeleteOkFrame>(_.Header.ChannelIndex))
-                        .LogError()
-                        .Log(_ => $"RECEIVED: {_.ToString()}");
+                        .Log(_ => $"RECEIVED: {_.ToString()}")
+                        .LogError();
         }
 
         public Task BasicQosAsync(Int16 prefetchCount, Boolean global)
@@ -216,12 +207,11 @@ namespace Amqp.Net.Client
                                                        prefetchCount,
                                                        global));
             return frame.SendAsync(channel)
-                        .LogError()
                         .Log(_ => $"SENT: {_.ToString()}")
                         .Then(_ => bag.For(BasicQosOk.StaticDescriptor)
                                       .WaitForAsync<BasicQosOkFrame>(_.Header.ChannelIndex))
-                        .LogError()
-                        .Log(_ => $"RECEIVED: {_.ToString()}");
+                        .Log(_ => $"RECEIVED: {_.ToString()}")
+                        .LogError();
         }
 
         public Task BasicConsumeAsync(String queueName,
@@ -240,12 +230,11 @@ namespace Amqp.Net.Client
                                                                false,
                                                                new Table(new Dictionary<String, Object>())));
             return frame.SendAsync(channel)
-                        .LogError()
                         .Log(_ => $"SENT: {_.ToString()}")
                         .Then(_ => bag.For(BasicConsumeOk.StaticDescriptor)
                                       .WaitForAsync<BasicConsumeOkFrame>(_.Header.ChannelIndex))
-                        .LogError()
-                        .Log(_ => $"RECEIVED: {_.ToString()}");
+                        .Log(_ => $"RECEIVED: {_.ToString()}")
+                        .LogError();
         }
     }
 }

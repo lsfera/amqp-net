@@ -7,6 +7,7 @@
   <ItemGroup>
     <PackageReference Include="DotNetty.Common" Version="0.4.6" />
     <PackageReference Include="DotNetty.Handlers" Version="0.4.6" />
+    <PackageReference Include="System.Threading.Thread" Version="4.3.0" />
   </ItemGroup>
 
 </Project>

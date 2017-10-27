@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 
@@ -88,7 +89,7 @@ namespace Amqp.Net.Client.Extensions
 
         private static void WriteEntry(LogLevel level, String message)
         {
-            var entry = $"{level}: {message}";
+            var entry = $"[{Thread.CurrentThread.ManagedThreadId.ToString().PadLeft(3, '0')}][{level.ToString().ToUpperInvariant().PadRight(7, ' ')}]:{message}";
             Debug.WriteLine(entry);
             WriteToConsole(level, entry);
         }

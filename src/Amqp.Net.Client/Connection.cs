@@ -51,27 +51,20 @@ namespace Amqp.Net.Client
 
             return await ProtocolHeader.Instance
                                        .WriteToAsync(channel)
-                                       .LogError()
                                        .Then(() => bag.For(ConnectionStart.StaticDescriptor)
                                                       .WaitForAsync<ConnectionStartFrame>(0))
-                                       .LogError()
                                        .Log(_ => $"RECEIVED: {_.ToString()}")
                                        .Then(_ => _.SendAsync(channel, __ => __.ToConnectionStartOkFrame(connectionString.Credentials)))
-                                       .LogError()
                                        .Log(_ => $"SENT: {_.ToString()}")
                                        .Then(_ => bag.For(ConnectionTune.StaticDescriptor)
                                                      .WaitForAsync<ConnectionTuneFrame>(_.Header.ChannelIndex))
-                                       .LogError()
                                        .Log(_ => $"RECEIVED: {_.ToString()}")
                                        .Then(_ => _.SendAsync(channel, __ => __.ToConnectionTuneOkFrame()))
-                                       .LogError()
                                        .Log(_ => $"SENT: {_.ToString()}")
                                        .Then(_ => _.SendAsync(channel, __ => __.ToConnectionOpenFrame(connectionString.VirtualHost)))
-                                       .LogError()
                                        .Log(_ => $"SENT: {_.ToString()}")
                                        .Then(_ => bag.For(ConnectionOpenOk.StaticDescriptor)
                                                      .WaitForAsync<ConnectionOpenOkFrame>(_.Header.ChannelIndex))
-                                       .LogError()
                                        .Log(_ => $"RECEIVED: {_.ToString()}")
                                        .Then(_ => new Connection(group, channel, bag, _.Header.ChannelIndex))
                                        .LogError();
@@ -83,38 +76,34 @@ namespace Amqp.Net.Client
 
             return new ChannelOpenFrame(index,
                                         new ChannelOpen()).SendAsync(channel)
-                                                          .LogError()
                                                           .Log(_ => $"SENT: {_.ToString()}")
                                                           .Then(_ => bag.For(ChannelOpenOk.StaticDescriptor)
                                                                                    .WaitForAsync<ChannelOpenOkFrame>(_.Header.ChannelIndex))
-                                                          .LogError()
                                                           .Log(_ => $"RECEIVED: {_.ToString()}")
-                                                          .ContinueWith<IChannel>(_ => new Channel(channel, bag, index));
+                                                          .ContinueWith<IChannel>(_ => new Channel(channel, bag, index))
+                                                          .LogError();
         }
 
         public Task CloseAsync()
         {
             return ConnectionCloseFrame.Close()
                                        .SendAsync(channel)
-                                       .LogError()
                                        .Log(_ => $"SENT: {_.ToString()}")
                                        .Then(_ => bag.For(ConnectionCloseOk.StaticDescriptor)
                                                      .WaitForAsync<ConnectionCloseOkFrame>(_.Header.ChannelIndex))
-                                       .LogError()
-                                       .Log(_ => $"RECEIVED: {_.ToString()}");
+                                       .Log(_ => $"RECEIVED: {_.ToString()}")
+                                       .LogError();
         }
 
         public void Dispose()
         {
             try
             {
-                CloseAsync().LogError()
-                            .Then(() => channel.CloseAsync())
-                            .LogError()
+                CloseAsync().Then(() => channel.CloseAsync())
                             .Then(() => group.ShutdownGracefullyAsync(TimeSpan.FromMilliseconds(100),
                                                                       TimeSpan.FromSeconds(1)))
-                            .Unwrap()
                             .LogError()
+                            .Unwrap()
                             .Wait(TimeSpan.FromSeconds(5d));
             }
             catch { }

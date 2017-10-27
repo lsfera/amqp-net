@@ -46,7 +46,9 @@ namespace Amqp.Net.Client.Payloads
         {
             Reserved1 = reserved1;
             QueueName = queueName;
-            ConsumerTag = consumerTag;
+            ConsumerTag = String.IsNullOrEmpty(consumerTag)
+                              ? Guid.NewGuid().ToString()
+                              : consumerTag;
             NoLocal = noLocal;
             NoAck = noAck;
             Exclusive = exclusive;
