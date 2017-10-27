@@ -42,5 +42,11 @@ namespace Amqp.Net.Client
                               Boolean ifEmpty);
 
         Task BasicQosAsync(Int16 prefetchCount, Boolean global);
+
+        Task BasicConsumeAsync(String queueName,
+                               String consumerTag,
+                               Boolean noLocal,
+                               Boolean noAck,
+                               Boolean exclusive);
     }
 }

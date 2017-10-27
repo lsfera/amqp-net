@@ -223,5 +223,29 @@ namespace Amqp.Net.Client
                         .LogError()
                         .Log(_ => $"RECEIVED: {_.ToString()}");
         }
+
+        public Task BasicConsumeAsync(String queueName,
+                                      String consumerTag,
+                                      Boolean noLocal,
+                                      Boolean noAck,
+                                      Boolean exclusive)
+        {
+            var frame = new BasicConsumeFrame(channelIndex,
+                                              new BasicConsume(0,
+                                                               queueName,
+                                                               consumerTag,
+                                                               noLocal,
+                                                               noAck,
+                                                               exclusive,
+                                                               false,
+                                                               new Table(new Dictionary<String, Object>())));
+            return frame.SendAsync(channel)
+                        .LogError()
+                        .Log(_ => $"SENT: {_.ToString()}")
+                        .Then(_ => bag.For(BasicConsumeOk.StaticDescriptor)
+                                      .WaitForAsync<BasicConsumeOkFrame>(_.Header.ChannelIndex))
+                        .LogError()
+                        .Log(_ => $"RECEIVED: {_.ToString()}");
+        }
     }
 }

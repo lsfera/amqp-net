@@ -89,7 +89,16 @@ namespace Amqp.Net.Tests
                                                                               new Table(new Dictionary<String, Object> { { "11", 12 } })))),
                          AssertFrame(new QueueUnbindOkFrame(27, new QueueUnbindOk())),
                          AssertFrame(new BasicQosFrame(28, new BasicQos(3, 4, false))),
-                         AssertFrame(new BasicQosOkFrame(28, new BasicQosOk())))
+                         AssertFrame(new BasicQosOkFrame(29, new BasicQosOk())),
+                         AssertFrame(new BasicConsumeFrame(30, new BasicConsume(0,
+                                                                                "queueName",
+                                                                                "consumer-tag-1",
+                                                                                false,
+                                                                                true,
+                                                                                false,
+                                                                                false,
+                                                                                new Table(new Dictionary<String, Object> { { "11", 12 } })))),
+                         AssertFrame(new BasicConsumeOkFrame(31, new BasicConsumeOk("consumer-tag-1"))))
                 .Wait();
         }
 
