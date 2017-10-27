@@ -1,0 +1,40 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+VisualStudioVersion = 15.0.27004.2005
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Amqp.Net.Client", "Amqp.Net.Client\Amqp.Net.Client.csproj", "{206089A3-F43E-4AA9-85C0-4B8611585377}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Amqp.Net.Tests", "Amqp.Net.Tests\Amqp.Net.Tests.csproj", "{2F35F475-14AB-48A2-B5B4-56141CCB8B65}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution items", "Solution items", "{D507BD02-A121-4F69-A6E0-B0A909279961}"
+	ProjectSection(SolutionItems) = preProject
+		..\.gitignore = ..\.gitignore
+		..\build.cake = ..\build.cake
+		..\build.ps1 = ..\build.ps1
+		..\LICENSE = ..\LICENSE
+		..\README.md = ..\README.md
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{206089A3-F43E-4AA9-85C0-4B8611585377}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{206089A3-F43E-4AA9-85C0-4B8611585377}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{206089A3-F43E-4AA9-85C0-4B8611585377}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{206089A3-F43E-4AA9-85C0-4B8611585377}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2F35F475-14AB-48A2-B5B4-56141CCB8B65}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2F35F475-14AB-48A2-B5B4-56141CCB8B65}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2F35F475-14AB-48A2-B5B4-56141CCB8B65}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2F35F475-14AB-48A2-B5B4-56141CCB8B65}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {4451E078-A869-44AF-9229-627D2B9F241B}
+	EndGlobalSection
+EndGlobal
