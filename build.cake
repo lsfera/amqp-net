@@ -1,15 +1,10 @@
-var target = Argument("target", "Default");
-var buildConfiguration = Argument("configuration", "Release");
-var buildVerbosity = (DotNetCoreVerbosity)Enum.Parse(typeof(DotNetCoreVerbosity), Argument("buildVerbosity", "Quiet"));
-var buildNumber = Argument("buildNumber", "0");
-
-var msBuildSettings = new DotNetCoreMSBuildSettings { NoLogo = true };
-var cleanSettings = new DotNetCoreCleanSettings { MSBuildSettings = msBuildSettings, Verbosity = buildVerbosity };
-var restoreSettings = new DotNetCoreRestoreSettings { MSBuildSettings = msBuildSettings, Verbosity = buildVerbosity };
-var buildSettings = new DotNetCoreBuildSettings { MSBuildSettings = msBuildSettings, Configuration = buildConfiguration, Verbosity = buildVerbosity };
-var testSettings = new DotNetCoreTestSettings { NoBuild = true, Configuration = buildConfiguration, Verbosity = buildVerbosity };
-var packSettings = new DotNetCorePackSettings { MSBuildSettings = msBuildSettings, Configuration = buildConfiguration, Verbosity = buildVerbosity };
-var publishSettings = new DotNetCorePublishSettings { MSBuildSettings = msBuildSettings, Configuration = buildConfiguration, Verbosity = buildVerbosity };
+var target = Argument<string>("target");
+var buildConfiguration = Argument<string>("buildConfiguration");
+var buildVerbosity = (DotNetCoreVerbosity)Enum.Parse(typeof(DotNetCoreVerbosity), Argument<string>("buildVerbosity"));
+var softwareVersion = Argument<string>("softwareVersion");
+var buildNumber = Argument<int>("buildNumber");
+var commitHash = Argument<string>("commitHash");
+var nuGetApiKey = Argument<string>("nuGetApiKey");
 
 var srcFolder = new DirectoryInfo(".\\src");
 var solutionFile = srcFolder
@@ -22,6 +17,8 @@ var projectFolders = srcFolder
     .Select(x => x.FullName);
 var codeFolders = projectFolders.Where(x => !x.Contains("Tests"));
 var testFolders = projectFolders.Except(codeFolders);
+var projectToPack = "Amqp.Net.Client";
+var artifactsDirectory = ".\\artifacts";
 
 Task("Clean")
     .Does(() =>
@@ -29,6 +26,11 @@ Task("Clean")
         foreach (var folder in projectFolders)
         {
             Information(folder);
+            var cleanSettings = new DotNetCoreCleanSettings
+            {
+                MSBuildSettings = new DotNetCoreMSBuildSettings { NoLogo = true },
+                Verbosity = buildVerbosity
+            };
             DotNetCoreClean(folder, cleanSettings);
         }
     });
@@ -40,6 +42,12 @@ Task("Build")
         foreach (var folder in projectFolders)
         {
             Information(folder);
+            var buildSettings = new DotNetCoreBuildSettings
+            {
+                MSBuildSettings = new DotNetCoreMSBuildSettings { NoLogo = true },
+                Configuration = buildConfiguration,
+                Verbosity = buildVerbosity
+            };
             DotNetCoreBuild(folder, buildSettings);
         }
     });
@@ -51,53 +59,65 @@ Task("Test")
         foreach (var folder in testFolders)
         {
             Information(folder);
+            var testSettings = new DotNetCoreTestSettings { NoBuild = true, Configuration = buildConfiguration, Verbosity = buildVerbosity };
             DotNetCoreTest(folder, testSettings);
         }
     });
 
-Task("Version")
-    .Does(() =>
-    {
-        foreach (var folder in codeFolders)
-        {
-            var path = String.Concat(folder, "\\", folder, ".csproj");
-            var content = System.IO.File.ReadAllText(path);
-            var document = new System.Xml.XmlDocument();
-            document.LoadXml(content);
-            var element = document.DocumentElement["PropertyGroup"]["VersionPrefix"];
-            var segments = element.InnerText.Split('.');
-            var version = String.Format("{0}.{1}.{2}", segments[0], segments[1], buildNumber);
-            element.InnerText = version;
-            document.DocumentElement["PropertyGroup"]["AssemblyVersion"].InnerText = version;
-            document.DocumentElement["PropertyGroup"]["FileVersion"].InnerText = version;
-            System.IO.File.WriteAllText(path, document.InnerXml);
-        }
-    });
-
-Task("Default")
-    .IsDependentOn("Test");
-
 Task("Pack")
     .IsDependentOn("Test")
-    .IsDependentOn("Version")
     .Does(() =>
     {
-        foreach (var folder in codeFolders)
+        var codeToPackFolder = codeFolders.Single(x => x.Contains(projectToPack));
+        
+        var content = System.IO.File.ReadAllText(String.Concat(codeToPackFolder, "\\", projectToPack, ".csproj"));
+        var document = new System.Xml.XmlDocument();
+        document.LoadXml(content);
+        var csprojVersion = document.DocumentElement["PropertyGroup"]["Version"].InnerText.Split(new [] { '-' }, 2, StringSplitOptions.RemoveEmptyEntries);
+
+        var providedVersion = softwareVersion.Split(new [] { '-' }, 2, StringSplitOptions.RemoveEmptyEntries);
+
+        var versionPrefix = providedVersion.Length <= 0 ? csprojVersion[0].Split('.') : providedVersion[0].Split('.');
+        var versionSuffix = (providedVersion.Length <= 1 ? csprojVersion[1] : providedVersion[1]).Replace("commitHash", commitHash);
+        
+        // AssemblyVersion
+        // 1.0.0
+        // 
+        // AssemblyFileVersion
+        // 1.2.3.<BUILD_NUMBER>
+        // 
+        // AssemblyInformationalVersion
+        // 1.2.3(-alpha-commitHash)
+        var assemblyVersion = String.Format("{0}.{0}.{0}.{0}", versionPrefix[0]);
+        var assemblyFileVersion = String.Format("{0}.{1}.{2}.{3}", versionPrefix[0], versionPrefix[1], versionPrefix[2], buildNumber);
+        var assemblyInformationalVersion = String.Format("{0}.{1}.{2}-{3}", versionPrefix[0], versionPrefix[1], versionPrefix[2], versionSuffix);
+
+        Information("AssemblyVersion: {0}", assemblyVersion);
+        Information("AssemblyFileVersion: {0}", assemblyFileVersion);
+        Information("AssemblyInformationalVersion/NuGet package version: {0}", assemblyInformationalVersion);
+
+        CreateDirectory(artifactsDirectory);
+        var packSettings = new DotNetCorePackSettings
         {
-            Information(folder);
-            DotNetCorePack(folder, packSettings);
-        }
+            MSBuildSettings = new DotNetCoreMSBuildSettings { NoLogo = true }
+                .WithProperty("AssemblyVersion", assemblyVersion)
+                .WithProperty("FileVersion", assemblyFileVersion)
+                .WithProperty("InformationalVersion", assemblyInformationalVersion)
+                .WithProperty("Version", assemblyInformationalVersion),
+            Configuration = buildConfiguration,
+            Verbosity = buildVerbosity,
+            OutputDirectory = artifactsDirectory
+        };
+        DotNetCorePack(codeToPackFolder, packSettings);
     });
 
-Task("Publish")
+Task("NuGetPush")
     .IsDependentOn("Pack")
     .Does(() =>
     {
-        foreach (var folder in codeFolders)
-        {
-            Information(folder);
-            DotNetCorePublish(folder, publishSettings);
-        }
+        var packageSearchPattern = string.Format("{0}/{1}*.nupkg", artifactsDirectory, projectToPack);
+        var nuGetPushSettings = new DotNetCoreNuGetPushSettings { Source = "https://www.nuget.org/api/v2/package", ApiKey = nuGetApiKey };
+        DotNetCoreNuGetPush(packageSearchPattern, nuGetPushSettings);
     });
 
 RunTarget(target);
