@@ -4,12 +4,13 @@ using Amqp.Net.Client.Payloads;
 
 namespace Amqp.Net.Client.Frames
 {
-    internal abstract class Frame<T> : IFrame
-        where T : class, IFramePayload
+    internal abstract class Frame<TPayload, TContext> : IFrame
+        where TPayload : class, IFramePayload
+        where TContext : IFrameContext
     {
-        public readonly T Payload;
+        public readonly TPayload Payload;
 
-        internal Frame(FrameHeader header, T payload)
+        internal Frame(FrameHeader header, TPayload payload)
         {
             Header = header;
             Payload = payload;
@@ -18,6 +19,10 @@ namespace Amqp.Net.Client.Frames
         public FrameHeader Header { get; }
 
         IFramePayload IFrame.Payload => Payload;
+
+        public abstract TContext Context { get; }
+
+        IFrameContext IFrame.Context => Context;
 
         public abstract Task WriteToAsync(DotNetty.Transport.Channels.IChannel channel);
 

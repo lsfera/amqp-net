@@ -4,7 +4,7 @@ using Amqp.Net.Client.Payloads;
 
 namespace Amqp.Net.Client.Frames
 {
-    internal class ConnectionCloseFrame : MethodFrame<ConnectionClose>
+    internal class ConnectionCloseFrame : MethodFrame<ConnectionClose, RpcContext>
     {
         internal static ConnectionCloseFrame Close()
         {
@@ -19,5 +19,7 @@ namespace Amqp.Net.Client.Frames
             : base(new FrameHeader(FrameType.METHOD, channel), payload)
         {
         }
+
+        public override RpcContext Context => new RpcContext(this);
     }
 }

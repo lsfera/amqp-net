@@ -13,6 +13,10 @@ namespace Amqp.Net.Client.Frames
 
         public IFramePayload Payload => new ProtocolHeader();
 
+        public RpcContext Context => new RpcContext(this);
+
+        IFrameContext IFrame.Context => Context;
+
         public Task WriteToAsync(DotNetty.Transport.Channels.IChannel channel)
         {
             var buffer = Unpooled.Buffer();

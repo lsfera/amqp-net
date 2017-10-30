@@ -1,9 +1,8 @@
 ﻿using System;
-using System.Diagnostics;
 using Amqp.Net.Client.Frames;
+using Amqp.Net.Client.Extensions;
 using Amqp.Net.Client.Payloads;
 using DotNetty.Buffers;
-using DotNetty.Common.Utilities;
 using DotNetty.Transport.Channels;
 
 namespace Amqp.Net.Client.Handlers
@@ -26,14 +25,22 @@ namespace Amqp.Net.Client.Handlers
 
             var result = parser.Parse(buffer);
 
-            if (result.Payload is MethodFramePayload payload)
-                bag.For(payload.Descriptor)
-                   .Pop(result.Header.ChannelIndex)
-                   .SetResult(result);
-            else
+            if (!(result.Payload is MethodFramePayload payload))
                 throw new NotSupportedException("implementation is ongoing...");
 
-            buffer.SafeRelease();
+            switch (result.Context)
+            {
+                case AsyncContext ctx:
+                    bag.Async(payload.Descriptor)
+                       .Pop(ctx)
+                       .Handle(result);
+                    break;
+                case RpcContext ctx:
+                    bag.Rpc(payload.Descriptor)
+                       .Pop(ctx)
+                       .Handle(result);
+                    break;
+            }
         }
 
         public override void ChannelReadComplete(IChannelHandlerContext context)
@@ -44,7 +51,7 @@ namespace Amqp.Net.Client.Handlers
         public override void ExceptionCaught(IChannelHandlerContext context, Exception exception)
         {
             // TODO: should be managed at connection level.
-            Debug.WriteLine("exception: " + exception);
+            exception.Log();
             context.CloseAsync();
         }
     }

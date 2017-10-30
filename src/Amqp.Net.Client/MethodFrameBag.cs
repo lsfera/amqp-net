@@ -1,60 +1,169 @@
 ﻿using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 using Amqp.Net.Client.Extensions;
 using Amqp.Net.Client.Frames;
 
 namespace Amqp.Net.Client
 {
+    internal interface IFrameHandlerResult
+    {
+        void Handle(IFrame frame);
+
+        Task<IFrame> Result { get; }
+    }
+
+    internal class RpcFrameHandlerResult<TFrame> : IFrameHandlerResult
+        where TFrame : class, IFrame
+    {
+        private readonly TaskCompletionSource<TFrame> tcs;
+
+        public RpcFrameHandlerResult(TaskCompletionSource<TFrame> tcs)
+        {
+            this.tcs = tcs;
+        }
+
+        public void Handle(IFrame frame)
+        {
+            tcs.SetResult((TFrame)frame);
+        }
+
+        public Task<IFrame> Result => tcs.Task.Then<TFrame, IFrame>(_ => _);
+    }
+
+    internal class AsyncFrameHandlerResult<TFrame> : IFrameHandlerResult
+        where TFrame : class, IFrame
+    {
+        private readonly IFrame sourceFrame;
+        private readonly Action<TFrame> action;
+
+        public AsyncFrameHandlerResult(IFrame sourceFrame, Action<TFrame> action)
+        {
+            this.sourceFrame = sourceFrame;
+            this.action = action;
+        }
+
+        public void Handle(IFrame frame)
+        {
+            action((TFrame)frame);
+        }
+
+        public Task<IFrame> Result => Task.FromResult(sourceFrame);
+    }
+
     internal class MethodFrameBag : IMethodFrameBag
     {
-        // TODO: be sure it won't be evaluated all the times
-        private static readonly IDictionary<MethodFrameDescriptor, MethodFrameDictionary> DescriptorsMap =
-            MethodFrameDescriptor.AvailableDescriptors
-                                 .Select(_ => new KeyValuePair<MethodFrameDescriptor, MethodFrameDictionary>(_, new MethodFrameDictionary()))
-                                 .ToDictionary(_ => _.Key, _ => _.Value);
+        private static readonly ConcurrentDictionary<MethodFrameDescriptor, IFrameHandler<RpcContext>> RpcDescriptorsMap =
+            new ConcurrentDictionary<MethodFrameDescriptor, IFrameHandler<RpcContext>>();
 
-        internal interface IMethodFrameDictionary
+        private static readonly ConcurrentDictionary<MethodFrameDescriptor, IFrameHandler<AsyncContext>> AsyncDescriptorsMap =
+            new ConcurrentDictionary<MethodFrameDescriptor, IFrameHandler<AsyncContext>>();
+
+        internal interface IFrameHandler<in TContext>
+            where TContext : IFrameContext
         {
-            TaskCompletionSource<IFrame> Pop(Int16 channelIndex);
+            IFrameHandlerResult Pop(TContext context);
 
-            Task<T> WaitForAsync<T>(Int16 channelIndex)
-                where T : IFrame;
+            Task<TFrame> Register<TFrame>(TContext context, Func<IFrameHandlerResult> func)
+                where TFrame : class, IFrame;
         }
 
-        internal class MethodFrameDictionary : IMethodFrameDictionary
+        internal class RpcFrameHandler : IFrameHandler<RpcContext>
         {
-            private readonly ConcurrentDictionary<Int16, BlockingCollection<TaskCompletionSource<IFrame>>> ChannelsMap =
-                new ConcurrentDictionary<Int16, BlockingCollection<TaskCompletionSource<IFrame>>>();
+            private readonly ConcurrentDictionary<Int16, BlockingCollection<IFrameHandlerResult>> ChannelsMap =
+                new ConcurrentDictionary<Int16, BlockingCollection<IFrameHandlerResult>>();
 
-            private BlockingCollection<TaskCompletionSource<IFrame>> AtChannelIndex(Int16 channelIndex)
+            private BlockingCollection<IFrameHandlerResult> AtChannelIndex(Int16 channelIndex)
             {
                 return ChannelsMap.GetOrAdd(channelIndex,
-                                            new BlockingCollection<TaskCompletionSource<IFrame>>(new ConcurrentQueue<TaskCompletionSource<IFrame>>()));
+                                            new BlockingCollection<IFrameHandlerResult>(new ConcurrentQueue<IFrameHandlerResult>()));
             }
 
-            public TaskCompletionSource<IFrame> Pop(Int16 channelIndex)
+            public IFrameHandlerResult Pop(RpcContext context)
             {
-                return AtChannelIndex(channelIndex).Take();
+                return AtChannelIndex(context.ChannelIndex).Take();
             }
 
-            public Task<T> WaitForAsync<T>(Int16 channelIndex)
-                where T : IFrame
+            public Task<TFrame> Register<TFrame>(RpcContext context, Func<IFrameHandlerResult> func)
+                where TFrame : class, IFrame
             {
-                var tcs = new TaskCompletionSource<IFrame>();
-                AtChannelIndex(channelIndex).Add(tcs);
+                var result = func();
+                AtChannelIndex(context.ChannelIndex).Add(result);
                 
-                return tcs.Task.Then(_ => (T)_);
+                return result.Result.Cast<TFrame>();
             }
         }
 
-        public IMethodFrameDictionary For(MethodFrameDescriptor descriptor)
+        internal class AsyncFrameHandler : IFrameHandler<AsyncContext>
         {
-            return DescriptorsMap.ContainsKey(descriptor)
-                       ? DescriptorsMap[descriptor]
-                       : throw new NotSupportedException($"class-id '{descriptor.ClassId}' and method-id '{descriptor.MethodId}' are not supported");
+            private readonly ConcurrentDictionary<Int16, ConcurrentDictionary<String, BlockingCollection<IFrameHandlerResult>>> ChannelsMap =
+                new ConcurrentDictionary<Int16, ConcurrentDictionary<String, BlockingCollection<IFrameHandlerResult>>>();
+
+            public IFrameHandlerResult Pop(AsyncContext context)
+            {
+                var consumers = WithConsumer(AtChannelIndex(context.ChannelIndex),
+                                             context.ConsumerTag);
+
+                return consumers.Take();
+            }
+
+            public Task<TFrame> Register<TFrame>(AsyncContext context, Func<IFrameHandlerResult> func)
+                where TFrame : class, IFrame
+            {
+                var consumers = WithConsumer(AtChannelIndex(context.ChannelIndex),
+                                             context.ConsumerTag);
+
+                var result = func();
+                consumers.Add(result);
+
+                return result.Result.Cast<TFrame>();
+            }
+
+            private static BlockingCollection<IFrameHandlerResult> WithConsumer(ConcurrentDictionary<String, BlockingCollection<IFrameHandlerResult>> channels,
+                                                                                String consumerTag)
+            {
+                return channels.GetOrAdd(consumerTag,
+                                         new BlockingCollection<IFrameHandlerResult>(new ConcurrentQueue<IFrameHandlerResult>()));
+            }
+
+            private ConcurrentDictionary<String, BlockingCollection<IFrameHandlerResult>> AtChannelIndex(Int16 channelIndex)
+            {
+                return ChannelsMap.GetOrAdd(channelIndex,
+                                            new ConcurrentDictionary<String, BlockingCollection<IFrameHandlerResult>>());
+            }
+        }
+
+        public IFrameHandler<RpcContext> Rpc(MethodFrameDescriptor descriptor)
+        {
+            return RpcDescriptorsMap.GetOrAdd(descriptor, new RpcFrameHandler());
+        }
+
+        public IFrameHandler<AsyncContext> Async(MethodFrameDescriptor descriptor)
+        {
+            return AsyncDescriptorsMap.GetOrAdd(descriptor, new AsyncFrameHandler());
+        }
+    }
+
+    internal static class FrameHandlerExtensions
+    {
+        internal static Task<TFrame> Register<TFrame>(this MethodFrameBag.IFrameHandler<RpcContext> handler,
+                                                      RpcContext context)
+            where TFrame : class, IFrame
+        {
+            IFrameHandlerResult Func() => new RpcFrameHandlerResult<TFrame>(new TaskCompletionSource<TFrame>());
+
+            return handler.Register<TFrame>(context, Func);
+        }
+
+        internal static Task<TFrame> Register<TFrame>(this MethodFrameBag.IFrameHandler<AsyncContext> handler,
+                                                      AsyncContext context,
+                                                      IFrame sourceFrame,
+                                                      Action<TFrame> action)
+            where TFrame : class, IFrame
+        {
+            IFrameHandlerResult Func() => new AsyncFrameHandlerResult<TFrame>(sourceFrame, action);
+
+            return handler.Register<TFrame>(context, Func);
         }
     }
 }

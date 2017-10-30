@@ -44,6 +44,7 @@ namespace Amqp.Net.Client
                                                                        });
             var channel = await new Bootstrap().Group(group)
                                                .Channel<TcpSocketChannel>()
+                                               .Option(ChannelOption.AutoRead, true)
                                                .Option(ChannelOption.TcpNodelay, true)
                                                .Option(ChannelOption.SoKeepalive, true)
                                                .Handler(handler)
@@ -51,20 +52,20 @@ namespace Amqp.Net.Client
 
             return await ProtocolHeaderFrame.Instance
                                             .SendAsync(channel)
-                                            .Then(_ => bag.For(ConnectionStart.StaticDescriptor)
-                                                          .WaitForAsync<ConnectionStartFrame>(0))
+                                            .Then(_ => bag.Rpc(ConnectionStart.StaticDescriptor)
+                                                          .Register<ConnectionStartFrame>(_.Context))
                                             .Log(_ => $"RECEIVED: {_.ToString()}")
                                             .Then(_ => _.SendAsync(channel, __ => __.ToConnectionStartOkFrame(connectionString.Credentials)))
                                             .Log(_ => $"SENT: {_.ToString()}")
-                                            .Then(_ => bag.For(ConnectionTune.StaticDescriptor)
-                                                          .WaitForAsync<ConnectionTuneFrame>(_.Header.ChannelIndex))
+                                            .Then(_ => bag.Rpc(ConnectionTune.StaticDescriptor)
+                                                          .Register<ConnectionTuneFrame>(_.Context))
                                             .Log(_ => $"RECEIVED: {_.ToString()}")
                                             .Then(_ => _.SendAsync(channel, __ => __.ToConnectionTuneOkFrame()))
                                             .Log(_ => $"SENT: {_.ToString()}")
                                             .Then(_ => _.SendAsync(channel, __ => __.ToConnectionOpenFrame(connectionString.VirtualHost)))
                                             .Log(_ => $"SENT: {_.ToString()}")
-                                            .Then(_ => bag.For(ConnectionOpenOk.StaticDescriptor)
-                                                          .WaitForAsync<ConnectionOpenOkFrame>(_.Header.ChannelIndex))
+                                            .Then(_ => bag.Rpc(ConnectionOpenOk.StaticDescriptor)
+                                                          .Register<ConnectionOpenOkFrame>(_.Context))
                                             .Log(_ => $"RECEIVED: {_.ToString()}")
                                             .Then(_ => new Connection(group, channel, bag, _.Header.ChannelIndex))
                                             .LogError();
@@ -77,8 +78,8 @@ namespace Amqp.Net.Client
             return new ChannelOpenFrame(index,
                                         new ChannelOpen()).SendAsync(channel)
                                                           .Log(_ => $"SENT: {_.ToString()}")
-                                                          .Then(_ => bag.For(ChannelOpenOk.StaticDescriptor)
-                                                                                   .WaitForAsync<ChannelOpenOkFrame>(_.Header.ChannelIndex))
+                                                          .Then(_ => bag.Rpc(ChannelOpenOk.StaticDescriptor)
+                                                                        .Register<ChannelOpenOkFrame>(_.Context))
                                                           .Log(_ => $"RECEIVED: {_.ToString()}")
                                                           .ContinueWith<IChannel>(_ => new Channel(channel, bag, index))
                                                           .LogError();
@@ -89,8 +90,8 @@ namespace Amqp.Net.Client
             return ConnectionCloseFrame.Close()
                                        .SendAsync(channel)
                                        .Log(_ => $"SENT: {_.ToString()}")
-                                       .Then(_ => bag.For(ConnectionCloseOk.StaticDescriptor)
-                                                     .WaitForAsync<ConnectionCloseOkFrame>(_.Header.ChannelIndex))
+                                       .Then(_ => bag.Rpc(ConnectionCloseOk.StaticDescriptor)
+                                                     .Register<ConnectionCloseOkFrame>(_.Context))
                                        .Log(_ => $"RECEIVED: {_.ToString()}")
                                        .LogError();
         }

@@ -4,6 +4,8 @@ namespace Amqp.Net.Client
 {
     internal interface IMethodFrameBag
     {
-        MethodFrameBag.IMethodFrameDictionary For(MethodFrameDescriptor descriptor);
+        MethodFrameBag.IFrameHandler<RpcContext> Rpc(MethodFrameDescriptor descriptor);
+
+        MethodFrameBag.IFrameHandler<AsyncContext> Async(MethodFrameDescriptor descriptor);
     }
 }

@@ -7,13 +7,16 @@ using Amqp.Net.Client.Payloads;
 
 namespace Amqp.Net.Client.Frames
 {
-    internal class ConnectionStartFrame : MethodFrame<ConnectionStart>
+    internal class ConnectionStartFrame : MethodFrame<ConnectionStart, RpcContext>
     {
         internal ConnectionStartFrame(Int16 channel, ConnectionStart payload)
             : base(new FrameHeader(FrameType.METHOD, channel), payload)
         {
         }
 
+        public override RpcContext Context => new RpcContext(this);
+
+        // TODO: make an extension method?
         internal ConnectionStartOkFrame ToConnectionStartOkFrame(NetworkCredential credentials)
         {
             // TODO: check te server AMQP version

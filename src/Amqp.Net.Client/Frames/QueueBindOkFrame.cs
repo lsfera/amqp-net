@@ -4,11 +4,13 @@ using Amqp.Net.Client.Payloads;
 
 namespace Amqp.Net.Client.Frames
 {
-    internal class QueueBindOkFrame : MethodFrame<QueueBindOk>
+    internal class QueueBindOkFrame : MethodFrame<QueueBindOk, RpcContext>
     {
         internal QueueBindOkFrame(Int16 channelIndex, QueueBindOk payload)
             : base(new FrameHeader(FrameType.METHOD, channelIndex), payload)
         {
         }
+
+        public override RpcContext Context => new RpcContext(this);
     }
 }

@@ -24,16 +24,10 @@ namespace Amqp.Net.Client.Extensions
                         .Then(() => frame);
         }
 
-        internal static Task<T> ListenForAsync<T>(this Task<IFrame> task)
+        internal static Task<T> Cast<T>(this Task<IFrame> task)
             where T : class, IFrame
         {
-            return task.Then(_ =>
-                             {
-                                 if (!(_ is T result))
-                                     throw new Exception($"cannot convert a frame of type '{_.GetType().Name}' to '{typeof(T).Name}'");
-                             
-                                 return result;
-                             });
+            return task.Then(_ => _ as T);
         }
     }
 }

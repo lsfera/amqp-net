@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using Amqp.Net.Client.Decoding;
 using DotNetty.Buffers;
 
@@ -86,9 +85,6 @@ namespace Amqp.Net.Client.Frames
                     { Payloads.BasicDeliver.StaticDescriptor, (header, buffer) => new BasicDeliverFrame(header.ChannelIndex,
                                                                                                         Payloads.BasicDeliver.Parse(buffer)) }
                 };
-
-        // TODO: be sure it won't be evaluated every time
-        internal static readonly IEnumerable<MethodFrameDescriptor> AvailableDescriptors = map.Select(_ => _.Key);
 
         internal IFrame BuildFrame(FrameHeader header, IByteBuffer buffer)
         {

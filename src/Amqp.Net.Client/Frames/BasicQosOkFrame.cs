@@ -4,11 +4,13 @@ using Amqp.Net.Client.Payloads;
 
 namespace Amqp.Net.Client.Frames
 {
-    internal class BasicQosOkFrame : MethodFrame<BasicQosOk>
+    internal class BasicQosOkFrame : MethodFrame<BasicQosOk, RpcContext>
     {
         internal BasicQosOkFrame(Int16 channelIndex, BasicQosOk payload)
             : base(new FrameHeader(FrameType.METHOD, channelIndex), payload)
         {
         }
+
+        public override RpcContext Context => new RpcContext(this);
     }
 }

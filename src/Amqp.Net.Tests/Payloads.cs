@@ -107,26 +107,30 @@ namespace Amqp.Net.Tests
                 .Wait();
         }
 
-        private static async Task AssertFrame<T>(Frame<T> expected)
-            where T : class, IFramePayload
+        private static async Task AssertFrame<TPayload, TContext>(Frame<TPayload, TContext> expected)
+            where TPayload : class, IFramePayload
+            where TContext : IFrameContext
         {
             var channel = new FakeChannel();
             var buffer = await (expected.WriteToAsync(channel) as Task<IByteBuffer>);
-            var actual = new FrameParser().Parse(buffer) as Frame<T>;
-            Assert.Equal(expected, actual, new FrameEqualityComparer<T>(new FramePayloadEqualityComparer<T>()));
+            var actual = new FrameParser().Parse(buffer) as Frame<TPayload, TContext>;
+            Assert.Equal(expected,
+                         actual,
+                         new FrameEqualityComparer<TPayload, TContext>(new FramePayloadEqualityComparer<TPayload>()));
         }
 
-        private class FrameEqualityComparer<T> : IEqualityComparer<Frame<T>>
-            where T : class, IFramePayload
+        private class FrameEqualityComparer<TPayload, TContext> : IEqualityComparer<Frame<TPayload, TContext>>
+            where TPayload : class, IFramePayload
+            where TContext : IFrameContext
         {
-            private readonly IEqualityComparer<T> comparer;
+            private readonly IEqualityComparer<TPayload> comparer;
 
-            public FrameEqualityComparer(IEqualityComparer<T> comparer)
+            public FrameEqualityComparer(IEqualityComparer<TPayload> comparer)
             {
                 this.comparer = comparer;
             }
 
-            public Boolean Equals(Frame<T> x, Frame<T> y)
+            public Boolean Equals(Frame<TPayload, TContext> x, Frame<TPayload, TContext> y)
             {
                 if (ReferenceEquals(x, y))
                     return true;
@@ -143,7 +147,7 @@ namespace Amqp.Net.Tests
                 return Equals(x.Header, y.Header) && comparer.Equals(x.Payload, y.Payload);
             }
 
-            public Int32 GetHashCode(Frame<T> instance)
+            public Int32 GetHashCode(Frame<TPayload, TContext> instance)
             {
                 unchecked
                 {

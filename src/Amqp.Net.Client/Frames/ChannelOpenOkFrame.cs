@@ -4,11 +4,13 @@ using Amqp.Net.Client.Payloads;
 
 namespace Amqp.Net.Client.Frames
 {
-    internal class ChannelOpenOkFrame : MethodFrame<ChannelOpenOk>
+    internal class ChannelOpenOkFrame : MethodFrame<ChannelOpenOk, RpcContext>
     {
         internal ChannelOpenOkFrame(Int16 channel, ChannelOpenOk payload)
             : base(new FrameHeader(FrameType.METHOD, channel), payload)
         {
         }
+
+        public override RpcContext Context => new RpcContext(this);
     }
 }

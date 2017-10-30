@@ -4,13 +4,16 @@ using Amqp.Net.Client.Payloads;
 
 namespace Amqp.Net.Client.Frames
 {
-    internal class ConnectionTuneFrame : MethodFrame<ConnectionTune>
+    internal class ConnectionTuneFrame : MethodFrame<ConnectionTune, RpcContext>
     {
         internal ConnectionTuneFrame(Int16 channel, ConnectionTune payload)
             : base(new FrameHeader(FrameType.METHOD, channel), payload)
         {
         }
 
+        public override RpcContext Context => new RpcContext(this);
+
+        // TODO: make an extension method?
         internal ConnectionTuneOkFrame ToConnectionTuneOkFrame()
         {
             return new ConnectionTuneOkFrame(Header.ChannelIndex,

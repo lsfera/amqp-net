@@ -57,24 +57,21 @@ namespace Amqp.Net.Client.Extensions
 
         internal static Task<TResult> LogError<TResult>(this Task<TResult> task)
         {
-            if (task.Exception != null)
-            {
-                var exception = task.Exception.GetBaseException();
-                WriteEntry(LogLevel.Error, $"{exception.Message}\n{exception.StackTrace}");
-            }
+            task.Exception?.GetBaseException().Log();
 
             return task;
         }
 
         internal static Task LogError(this Task task)
         {
-            if (task.Exception != null)
-            {
-                var exception = task.Exception.GetBaseException();
-                WriteEntry(LogLevel.Error, $"{exception.Message}\n{exception.StackTrace}");
-            }
+            task.Exception?.GetBaseException().Log();
 
             return task;
+        }
+
+        internal static void Log(this Exception exception)
+        {
+            WriteEntry(LogLevel.Error, $"{exception.Message}\n{exception.StackTrace}");
         }
 
         internal static Task<TResult> Log<TResult>(this Task<TResult> task,
