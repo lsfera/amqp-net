@@ -82,7 +82,9 @@ namespace Amqp.Net.Client.Frames
                     { Payloads.BasicConsume.StaticDescriptor, (header, buffer) => new BasicConsumeFrame(header.ChannelIndex,
                                                                                                         Payloads.BasicConsume.Parse(buffer)) },
                     { Payloads.BasicConsumeOk.StaticDescriptor, (header, buffer) => new BasicConsumeOkFrame(header.ChannelIndex,
-                                                                                                            Payloads.BasicConsumeOk.Parse(buffer)) }
+                                                                                                            Payloads.BasicConsumeOk.Parse(buffer)) },
+                    { Payloads.BasicDeliver.StaticDescriptor, (header, buffer) => new BasicDeliverFrame(header.ChannelIndex,
+                                                                                                        Payloads.BasicDeliver.Parse(buffer)) }
                 };
 
         // TODO: be sure it won't be evaluated every time

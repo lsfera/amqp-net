@@ -46,9 +46,7 @@ namespace Amqp.Net.Client.Payloads
         {
             Reserved1 = reserved1;
             QueueName = queueName;
-            ConsumerTag = String.IsNullOrEmpty(consumerTag)
-                              ? Guid.NewGuid().ToString()
-                              : consumerTag;
+            ConsumerTag = consumerTag ?? String.Empty;
             NoLocal = noLocal;
             NoAck = noAck;
             Exclusive = exclusive;
@@ -108,7 +106,7 @@ namespace Amqp.Net.Client.Payloads
 
         public override String ToString()
         {
-            return $"{{\"descriptor\":{Descriptor},\"reserved_1\":{Reserved1},\"queue_name\":\"{QueueName}\",\"consumer_tag\":\"{ConsumerTag}\",\"no_local\":{NoLocal},\"no_ack\":{NoAck},\"exclusive\":{Exclusive},\"no_wait\":{NoWait},\"arguments\":{Arguments}}}";
+            return $"{{\"descriptor\":{Descriptor},\"reserved_1\":{Reserved1},\"queue_name\":\"{QueueName}\",\"consumer_tag\":\"{ConsumerTag}\",\"no_local\":{NoLocal.ToString().ToLowerInvariant()},\"no_ack\":{NoAck.ToString().ToLowerInvariant()},\"exclusive\":{Exclusive.ToString().ToLowerInvariant()},\"no_wait\":{NoWait.ToString().ToLowerInvariant()},\"arguments\":{Arguments}}}";
         }
     }
 }

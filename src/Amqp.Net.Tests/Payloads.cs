@@ -98,7 +98,12 @@ namespace Amqp.Net.Tests
                                                                                 false,
                                                                                 false,
                                                                                 new Table(new Dictionary<String, Object> { { "11", 12 } })))),
-                         AssertFrame(new BasicConsumeOkFrame(31, new BasicConsumeOk("consumer-tag-1"))))
+                         AssertFrame(new BasicConsumeOkFrame(31, new BasicConsumeOk("consumer-tag-1"))),
+                         AssertFrame(new BasicDeliverFrame(32, new BasicDeliver("consumer-tag-1",
+                                                                                32L,
+                                                                                false,
+                                                                                "exchange_name",
+                                                                                "key"))))
                 .Wait();
         }
 
