@@ -49,25 +49,25 @@ namespace Amqp.Net.Client
                                                .Handler(handler)
                                                .ConnectAsync(connectionString.Endpoint); // TODO: handle error
 
-            return await ProtocolHeader.Instance
-                                       .WriteToAsync(channel)
-                                       .Then(() => bag.For(ConnectionStart.StaticDescriptor)
-                                                      .WaitForAsync<ConnectionStartFrame>(0))
-                                       .Log(_ => $"RECEIVED: {_.ToString()}")
-                                       .Then(_ => _.SendAsync(channel, __ => __.ToConnectionStartOkFrame(connectionString.Credentials)))
-                                       .Log(_ => $"SENT: {_.ToString()}")
-                                       .Then(_ => bag.For(ConnectionTune.StaticDescriptor)
-                                                     .WaitForAsync<ConnectionTuneFrame>(_.Header.ChannelIndex))
-                                       .Log(_ => $"RECEIVED: {_.ToString()}")
-                                       .Then(_ => _.SendAsync(channel, __ => __.ToConnectionTuneOkFrame()))
-                                       .Log(_ => $"SENT: {_.ToString()}")
-                                       .Then(_ => _.SendAsync(channel, __ => __.ToConnectionOpenFrame(connectionString.VirtualHost)))
-                                       .Log(_ => $"SENT: {_.ToString()}")
-                                       .Then(_ => bag.For(ConnectionOpenOk.StaticDescriptor)
-                                                     .WaitForAsync<ConnectionOpenOkFrame>(_.Header.ChannelIndex))
-                                       .Log(_ => $"RECEIVED: {_.ToString()}")
-                                       .Then(_ => new Connection(group, channel, bag, _.Header.ChannelIndex))
-                                       .LogError();
+            return await ProtocolHeaderFrame.Instance
+                                            .SendAsync(channel)
+                                            .Then(_ => bag.For(ConnectionStart.StaticDescriptor)
+                                                          .WaitForAsync<ConnectionStartFrame>(0))
+                                            .Log(_ => $"RECEIVED: {_.ToString()}")
+                                            .Then(_ => _.SendAsync(channel, __ => __.ToConnectionStartOkFrame(connectionString.Credentials)))
+                                            .Log(_ => $"SENT: {_.ToString()}")
+                                            .Then(_ => bag.For(ConnectionTune.StaticDescriptor)
+                                                          .WaitForAsync<ConnectionTuneFrame>(_.Header.ChannelIndex))
+                                            .Log(_ => $"RECEIVED: {_.ToString()}")
+                                            .Then(_ => _.SendAsync(channel, __ => __.ToConnectionTuneOkFrame()))
+                                            .Log(_ => $"SENT: {_.ToString()}")
+                                            .Then(_ => _.SendAsync(channel, __ => __.ToConnectionOpenFrame(connectionString.VirtualHost)))
+                                            .Log(_ => $"SENT: {_.ToString()}")
+                                            .Then(_ => bag.For(ConnectionOpenOk.StaticDescriptor)
+                                                          .WaitForAsync<ConnectionOpenOkFrame>(_.Header.ChannelIndex))
+                                            .Log(_ => $"RECEIVED: {_.ToString()}")
+                                            .Then(_ => new Connection(group, channel, bag, _.Header.ChannelIndex))
+                                            .LogError();
         }
 
         public Task<IChannel> OpenChannelAsync()
