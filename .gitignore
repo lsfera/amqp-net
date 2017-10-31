@@ -4,7 +4,8 @@
 ## Get latest from https://github.com/github/gitignore/blob/master/VisualStudio.gitignore
 
 # Custom rules
-tools/
+tools/artifacts
+tools/build/cake
 
 # User-specific files
 *.suo
