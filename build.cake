@@ -1,10 +1,12 @@
-var target = Argument<string>("target");
-var buildConfiguration = Argument<string>("buildConfiguration");
-var buildVerbosity = (DotNetCoreVerbosity)Enum.Parse(typeof(DotNetCoreVerbosity), Argument<string>("buildVerbosity"));
-var softwareVersion = Argument<string>("softwareVersion");
-var buildNumber = Argument<int>("buildNumber");
+// Clean, Build, Test, Pack, NuGetPush
+var target = Argument<string>("target", "Test");
+var buildConfiguration = Argument<string>("buildConfiguration", "Release");
+// Quiet, Minimal, Normal, Detailed, Diagnostic
+var buildVerbosity = (DotNetCoreVerbosity)Enum.Parse(typeof(DotNetCoreVerbosity), Argument<string>("buildVerbosity", "Minimal"));
+var softwareVersion = target == "Pack" ? Argument<string>("softwareVersion") : Argument<string>("softwareVersion", string.Empty);
+var buildNumber = Argument<int>("buildNumber", 0);
 var commitHash = Argument<string>("commitHash");
-var nuGetApiKey = Argument<string>("nuGetApiKey");
+var nuGetApiKey = Argument<string>("nuGetApiKey", string.Empty);
 
 var srcFolder = new DirectoryInfo(".\\src");
 var solutionFile = srcFolder
