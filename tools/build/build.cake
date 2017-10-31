@@ -1,14 +1,14 @@
-// Clean, Build, Test, Pack, NuGetPush
+var srcDir = Argument<string>("srcDir");
+var toolsDir = Argument<string>("toolsDir");
 var target = Argument<string>("target", "Test");
 var buildConfiguration = Argument<string>("buildConfiguration", "Release");
-// Quiet, Minimal, Normal, Detailed, Diagnostic
 var buildVerbosity = (DotNetCoreVerbosity)Enum.Parse(typeof(DotNetCoreVerbosity), Argument<string>("buildVerbosity", "Minimal"));
 var softwareVersion = target == "Pack" ? Argument<string>("softwareVersion") : Argument<string>("softwareVersion", string.Empty);
 var buildNumber = Argument<int>("buildNumber", 0);
 var commitHash = Argument<string>("commitHash");
 var nuGetApiKey = Argument<string>("nuGetApiKey", string.Empty);
 
-var srcFolder = new DirectoryInfo(".\\src");
+var srcFolder = new DirectoryInfo(srcDir);
 var solutionFile = srcFolder
     .GetFiles("*.sln")
     .Select(x => x.FullName)
@@ -20,7 +20,7 @@ var projectFolders = srcFolder
 var codeFolders = projectFolders.Where(x => !x.Contains("Tests"));
 var testFolders = projectFolders.Except(codeFolders);
 var projectToPack = "Amqp.Net.Client";
-var artifactsDirectory = ".\\artifacts";
+var artifactsDirectory = System.IO.Path.Combine(toolsDir, "artifacts");
 
 Task("Clean")
     .Does(() =>
@@ -72,7 +72,7 @@ Task("Pack")
     {
         var codeToPackFolder = codeFolders.Single(x => x.Contains(projectToPack));
         
-        var content = System.IO.File.ReadAllText(String.Concat(codeToPackFolder, "\\", projectToPack, ".csproj"));
+        var content = System.IO.File.ReadAllText(System.IO.Path.Combine(codeToPackFolder, projectToPack + ".csproj"));
         var document = new System.Xml.XmlDocument();
         document.LoadXml(content);
         var csprojVersion = document.DocumentElement["PropertyGroup"]["Version"].InnerText.Split(new [] { '-' }, 2, StringSplitOptions.RemoveEmptyEntries);
@@ -90,7 +90,7 @@ Task("Pack")
         // 
         // AssemblyInformationalVersion
         // 1.2.3(-alpha-commitHash)
-        var assemblyVersion = String.Format("{0}.{0}.{0}.{0}", versionPrefix[0]);
+        var assemblyVersion = String.Format("{0}.{1}.{1}.{1}", versionPrefix[0], 0);
         var assemblyFileVersion = String.Format("{0}.{1}.{2}.{3}", versionPrefix[0], versionPrefix[1], versionPrefix[2], buildNumber);
         var assemblyInformationalVersion = String.Format("{0}.{1}.{2}-{3}", versionPrefix[0], versionPrefix[1], versionPrefix[2], versionSuffix);
 
@@ -117,7 +117,7 @@ Task("NuGetPush")
     .IsDependentOn("Pack")
     .Does(() =>
     {
-        var packageSearchPattern = string.Format("{0}/{1}*.nupkg", artifactsDirectory, projectToPack);
+        var packageSearchPattern = System.IO.Path.Combine(artifactsDirectory, projectToPack + "*.nupkg");
         var nuGetPushSettings = new DotNetCoreNuGetPushSettings { Source = "https://www.nuget.org/api/v2/package", ApiKey = nuGetApiKey };
         DotNetCoreNuGetPush(packageSearchPattern, nuGetPushSettings);
     });
