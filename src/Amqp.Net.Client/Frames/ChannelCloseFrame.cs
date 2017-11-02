@@ -4,18 +4,18 @@ using Amqp.Net.Client.Payloads;
 
 namespace Amqp.Net.Client.Frames
 {
-    internal class ChannelCloseFrame : MethodFrame<ChannelClose, RpcContext>
+    internal class ChannelCloseFrame : MethodFrame<ChannelClosePayload, RpcContext>
     {
         internal static ChannelCloseFrame Close(Int16 channelIndex)
         {
             return new ChannelCloseFrame(channelIndex,
-                                         new ChannelClose(200,
-                                                          "connection_closed",
-                                                          20,
-                                                          41));
+                                         new ChannelClosePayload(200,
+                                                                 "connection_closed",
+                                                                 20,
+                                                                 41));
         }
 
-        internal ChannelCloseFrame(Int16 channel, ChannelClose payload)
+        internal ChannelCloseFrame(Int16 channel, ChannelClosePayload payload)
             : base(new FrameHeader(FrameType.METHOD, channel), payload)
         {
         }

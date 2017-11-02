@@ -4,9 +4,9 @@ using Amqp.Net.Client.Payloads;
 
 namespace Amqp.Net.Client.Frames
 {
-    internal class ConnectionTuneFrame : MethodFrame<ConnectionTune, RpcContext>
+    internal class ConnectionTuneFrame : MethodFrame<ConnectionTunePayload, RpcContext>
     {
-        internal ConnectionTuneFrame(Int16 channel, ConnectionTune payload)
+        internal ConnectionTuneFrame(Int16 channel, ConnectionTunePayload payload)
             : base(new FrameHeader(FrameType.METHOD, channel), payload)
         {
         }
@@ -17,9 +17,9 @@ namespace Amqp.Net.Client.Frames
         internal ConnectionTuneOkFrame ToConnectionTuneOkFrame()
         {
             return new ConnectionTuneOkFrame(Header.ChannelIndex,
-                                             new ConnectionTuneOk(Payload.ChannelMax,
-                                                                  Payload.FrameMax,
-                                                                  Payload.Heartbeat));
+                                             new ConnectionTuneOkPayload(Payload.ChannelMax,
+                                                                         Payload.FrameMax,
+                                                                         Payload.Heartbeat));
         }
     }
 }

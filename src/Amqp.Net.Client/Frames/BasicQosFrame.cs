@@ -4,9 +4,9 @@ using Amqp.Net.Client.Payloads;
 
 namespace Amqp.Net.Client.Frames
 {
-    internal class BasicQosFrame : MethodFrame<BasicQos, RpcContext>
+    internal class BasicQosFrame : MethodFrame<BasicQosPayload, RpcContext>
     {
-        internal BasicQosFrame(Int16 channelIndex, BasicQos payload)
+        internal BasicQosFrame(Int16 channelIndex, BasicQosPayload payload)
             : base(new FrameHeader(FrameType.METHOD, channelIndex), payload)
         {
         }

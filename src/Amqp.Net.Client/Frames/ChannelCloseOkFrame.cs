@@ -4,9 +4,9 @@ using Amqp.Net.Client.Payloads;
 
 namespace Amqp.Net.Client.Frames
 {
-    internal class ChannelCloseOkFrame : MethodFrame<ChannelCloseOk, RpcContext>
+    internal class ChannelCloseOkFrame : MethodFrame<ChannelCloseOkPayload, RpcContext>
     {
-        internal ChannelCloseOkFrame(Int16 channel, ChannelCloseOk payload)
+        internal ChannelCloseOkFrame(Int16 channel, ChannelCloseOkPayload payload)
             : base(new FrameHeader(FrameType.METHOD, channel), payload)
         {
         }

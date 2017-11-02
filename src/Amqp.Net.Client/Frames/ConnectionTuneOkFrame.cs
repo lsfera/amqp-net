@@ -4,9 +4,9 @@ using Amqp.Net.Client.Payloads;
 
 namespace Amqp.Net.Client.Frames
 {
-    internal class ConnectionTuneOkFrame : MethodFrame<ConnectionTuneOk, RpcContext>
+    internal class ConnectionTuneOkFrame : MethodFrame<ConnectionTuneOkPayload, RpcContext>
     {
-        internal ConnectionTuneOkFrame(Int16 channel, ConnectionTuneOk payload)
+        internal ConnectionTuneOkFrame(Int16 channel, ConnectionTuneOkPayload payload)
             : base(new FrameHeader(FrameType.METHOD, channel), payload)
         {
         }
@@ -17,7 +17,7 @@ namespace Amqp.Net.Client.Frames
         internal ConnectionOpenFrame ToConnectionOpenFrame(String virtualHost)
         {
             return new ConnectionOpenFrame(Header.ChannelIndex,
-                                           new ConnectionOpen(virtualHost));
+                                           new ConnectionOpenPayload(virtualHost));
         }
     }
 }

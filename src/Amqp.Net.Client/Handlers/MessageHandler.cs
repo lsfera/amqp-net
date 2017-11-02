@@ -30,13 +30,13 @@ namespace Amqp.Net.Client.Handlers
 
             switch (result.Context)
             {
-                case AsyncContext ctx:
-                    bag.Async(payload.Descriptor)
+                case ConsumeContext ctx:
+                    bag.OnConsume(payload.Descriptor)
                        .Pop(ctx)
                        .Handle(result);
                     break;
                 case RpcContext ctx:
-                    bag.Rpc(payload.Descriptor)
+                    bag.OnRpc(payload.Descriptor)
                        .Pop(ctx)
                        .Handle(result);
                     break;

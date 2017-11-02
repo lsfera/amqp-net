@@ -28,24 +28,6 @@ namespace Amqp.Net.Client.Extensions
                        .Unwrap();
         }
 
-        internal static Task<TNewResult> Then<TResult, TNewResult>(this Task<TResult> task,
-                                                                   Func<Task<TNewResult>> func)
-        {
-            if (task.Exception != null)
-                throw task.Exception.GetBaseException();
-
-            return func();
-        }
-
-        internal static Task<TNewResult> Then<TNewResult>(this Task task,
-                                                          Func<Task<TNewResult>> func)
-        {
-            if (task.Exception != null)
-                throw task.Exception.GetBaseException();
-
-            return func();
-        }
-
         internal static Task<TNewResult> Then<TNewResult>(this Task task,
                                                           Func<TNewResult> func)
         {

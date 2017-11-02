@@ -4,9 +4,9 @@ using Amqp.Net.Client.Payloads;
 
 namespace Amqp.Net.Client.Frames
 {
-    internal class ExchangeBindOkFrame : MethodFrame<ExchangeBindOk, RpcContext>
+    internal class ExchangeBindOkFrame : MethodFrame<ExchangeBindOkPayload, RpcContext>
     {
-        internal ExchangeBindOkFrame(Int16 channelIndex, ExchangeBindOk payload)
+        internal ExchangeBindOkFrame(Int16 channelIndex, ExchangeBindOkPayload payload)
             : base(new FrameHeader(FrameType.METHOD, channelIndex), payload)
         {
         }

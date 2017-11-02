@@ -4,9 +4,9 @@ using Amqp.Net.Client.Payloads;
 
 namespace Amqp.Net.Client.Frames
 {
-    internal class ExchangeDeclareFrame : MethodFrame<ExchangeDeclare, RpcContext>
+    internal class ExchangeDeclareFrame : MethodFrame<ExchangeDeclarePayload, RpcContext>
     {
-        internal ExchangeDeclareFrame(Int16 channelIndex, ExchangeDeclare payload)
+        internal ExchangeDeclareFrame(Int16 channelIndex, ExchangeDeclarePayload payload)
             : base(new FrameHeader(FrameType.METHOD, channelIndex), payload)
         {
         }

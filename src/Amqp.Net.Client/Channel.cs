@@ -38,7 +38,7 @@ namespace Amqp.Net.Client
             return ChannelCloseFrame.Close(channelIndex)
                                     .SendAsync(channel)
                                     .Log(_ => $"SENT: {_.ToString()}")
-                                    .Then(_ => bag.Rpc(ChannelCloseOk.StaticDescriptor)
+                                    .Then(_ => bag.OnRpc(ChannelCloseOkPayload.StaticDescriptor)
                                                   .Register<ChannelCloseOkFrame>(_.Context))
                                     .Log(_ => $"RECEIVED: {_.ToString()}")
                                     .LogError();
@@ -51,18 +51,18 @@ namespace Amqp.Net.Client
                                          Boolean @internal)
         {
             var frame = new ExchangeDeclareFrame(channelIndex,
-                                                 new ExchangeDeclare(0,
-                                                                     name,
-                                                                     type,
-                                                                     false,
-                                                                     durable,
-                                                                     autoDelete,
-                                                                     @internal,
-                                                                     false,
-                                                                     new Table(new Dictionary<String, Object>())));
+                                                 new ExchangeDeclarePayload(0,
+                                                                            name,
+                                                                            type,
+                                                                            false,
+                                                                            durable,
+                                                                            autoDelete,
+                                                                            @internal,
+                                                                            false,
+                                                                            new Table(new Dictionary<String, Object>())));
             return frame.SendAsync(channel)
                         .Log(_ => $"SENT: {_.ToString()}")
-                        .Then(_ => bag.Rpc(ExchangeDeclareOk.StaticDescriptor)
+                        .Then(_ => bag.OnRpc(ExchangeDeclareOkPayload.StaticDescriptor)
                                       .Register<ExchangeDeclareOkFrame>(_.Context))
                         .Log(_ => $"RECEIVED: {_.ToString()}")
                         .LogError();
@@ -74,15 +74,15 @@ namespace Amqp.Net.Client
         {
             // TODO: check the capability is available on server
             var frame = new ExchangeBindFrame(channelIndex,
-                                              new ExchangeBind(0,
-                                                               destination,
-                                                               source,
-                                                               routingKey,
-                                                               false,
-                                                               new Table(new Dictionary<String, Object>())));
+                                              new ExchangeBindPayload(0,
+                                                                      destination,
+                                                                      source,
+                                                                      routingKey,
+                                                                      false,
+                                                                      new Table(new Dictionary<String, Object>())));
             return frame.SendAsync(channel)
                         .Log(_ => $"SENT: {_.ToString()}")
-                        .Then(_ => bag.Rpc(ExchangeBindOk.StaticDescriptor)
+                        .Then(_ => bag.OnRpc(ExchangeBindOkPayload.StaticDescriptor)
                                       .Register<ExchangeBindOkFrame>(_.Context))
                         .Log(_ => $"RECEIVED: {_.ToString()}")
                         .LogError();
@@ -94,15 +94,15 @@ namespace Amqp.Net.Client
         {
             // TODO: check the capability is available on server
             var frame = new ExchangeUnbindFrame(channelIndex,
-                                                new ExchangeUnbind(0,
-                                                                   destination,
-                                                                   source,
-                                                                   routingKey,
-                                                                   false,
-                                                                   new Table(new Dictionary<String, Object>())));
+                                                new ExchangeUnbindPayload(0,
+                                                                          destination,
+                                                                          source,
+                                                                          routingKey,
+                                                                          false,
+                                                                          new Table(new Dictionary<String, Object>())));
             return frame.SendAsync(channel)
                         .Log(_ => $"SENT: {_.ToString()}")
-                        .Then(_ => bag.Rpc(ExchangeUnbindOk.StaticDescriptor)
+                        .Then(_ => bag.OnRpc(ExchangeUnbindOkPayload.StaticDescriptor)
                                       .Register<ExchangeUnbindOkFrame>(_.Context))
                         .Log(_ => $"RECEIVED: {_.ToString()}")
                         .LogError();
@@ -111,13 +111,13 @@ namespace Amqp.Net.Client
         public Task ExchangeDeleteAsync(String name, Boolean ifUnused)
         {
             var frame = new ExchangeDeleteFrame(channelIndex,
-                                                new ExchangeDelete(0,
-                                                                   name,
-                                                                   ifUnused,
-                                                                   false));
+                                                new ExchangeDeletePayload(0,
+                                                                          name,
+                                                                          ifUnused,
+                                                                          false));
             return frame.SendAsync(channel)
                         .Log(_ => $"SENT: {_.ToString()}")
-                        .Then(_ => bag.Rpc(ExchangeDeleteOk.StaticDescriptor)
+                        .Then(_ => bag.OnRpc(ExchangeDeleteOkPayload.StaticDescriptor)
                                       .Register<ExchangeDeleteOkFrame>(_.Context))
                         .Log(_ => $"RECEIVED: {_.ToString()}")
                         .LogError();
@@ -129,17 +129,17 @@ namespace Amqp.Net.Client
                                       Boolean autoDelete)
         {
             var frame = new QueueDeclareFrame(channelIndex,
-                                              new QueueDeclare(0,
-                                                               name,
-                                                               false,
-                                                               durable,
-                                                               exclusive,
-                                                               autoDelete,
-                                                               false,
-                                                               new Table(new Dictionary<String, Object>())));
+                                              new QueueDeclarePayload(0,
+                                                                      name,
+                                                                      false,
+                                                                      durable,
+                                                                      exclusive,
+                                                                      autoDelete,
+                                                                      false,
+                                                                      new Table(new Dictionary<String, Object>())));
             return frame.SendAsync(channel)
                         .Log(_ => $"SENT: {_.ToString()}")
-                        .Then(_ => bag.Rpc(QueueDeclareOk.StaticDescriptor)
+                        .Then(_ => bag.OnRpc(QueueDeclareOkPayload.StaticDescriptor)
                                       .Register<QueueDeclareOkFrame>(_.Context))
                         .Log(_ => $"RECEIVED: {_.ToString()}")
                         .LogError();
@@ -150,15 +150,15 @@ namespace Amqp.Net.Client
                                    String routingKey)
         {
             var frame = new QueueBindFrame(channelIndex,
-                                           new QueueBind(0,
-                                                         queueName,
-                                                         exchangeName,
-                                                         routingKey,
-                                                         false,
-                                                         new Table(new Dictionary<String, Object>())));
+                                           new QueueBindPayload(0,
+                                                                queueName,
+                                                                exchangeName,
+                                                                routingKey,
+                                                                false,
+                                                                new Table(new Dictionary<String, Object>())));
             return frame.SendAsync(channel)
                         .Log(_ => $"SENT: {_.ToString()}")
-                        .Then(_ => bag.Rpc(QueueBindOk.StaticDescriptor)
+                        .Then(_ => bag.OnRpc(QueueBindOkPayload.StaticDescriptor)
                                       .Register<QueueBindOkFrame>(_.Context))
                         .Log(_ => $"RECEIVED: {_.ToString()}")
                         .LogError();
@@ -169,14 +169,14 @@ namespace Amqp.Net.Client
                                      String routingKey)
         {
             var frame = new QueueUnbindFrame(channelIndex,
-                                             new QueueUnbind(0,
-                                                             queueName,
-                                                             exchangeName,
-                                                             routingKey,
-                                                             new Table(new Dictionary<String, Object>())));
+                                             new QueueUnbindPayload(0,
+                                                                    queueName,
+                                                                    exchangeName,
+                                                                    routingKey,
+                                                                    new Table(new Dictionary<String, Object>())));
             return frame.SendAsync(channel)
                         .Log(_ => $"SENT: {_.ToString()}")
-                        .Then(_ => bag.Rpc(QueueUnbindOk.StaticDescriptor)
+                        .Then(_ => bag.OnRpc(QueueUnbindOkPayload.StaticDescriptor)
                                       .Register<QueueUnbindOkFrame>(_.Context))
                         .Log(_ => $"RECEIVED: {_.ToString()}")
                         .LogError();
@@ -187,14 +187,14 @@ namespace Amqp.Net.Client
                                      Boolean ifEmpty)
         {
             var frame = new QueueDeleteFrame(channelIndex,
-                                             new QueueDelete(0,
-                                                             name,
-                                                             ifUnused,
-                                                             ifEmpty,
-                                                             false));
+                                             new QueueDeletePayload(0,
+                                                                    name,
+                                                                    ifUnused,
+                                                                    ifEmpty,
+                                                                    false));
             return frame.SendAsync(channel)
                         .Log(_ => $"SENT: {_.ToString()}")
-                        .Then(_ => bag.Rpc(QueueDeleteOk.StaticDescriptor)
+                        .Then(_ => bag.OnRpc(QueueDeleteOkPayload.StaticDescriptor)
                                       .Register<QueueDeleteOkFrame>(_.Context))
                         .Log(_ => $"RECEIVED: {_.ToString()}")
                         .LogError();
@@ -203,12 +203,12 @@ namespace Amqp.Net.Client
         public Task BasicQosAsync(Int16 prefetchCount, Boolean global)
         {
             var frame = new BasicQosFrame(channelIndex,
-                                          new BasicQos(0, // HACK: it seems RabbitMQ does not implement this: ({amqp_error,not_implemented,"prefetch_size!=0 (32768000)",'basic.qos'})
-                                                       prefetchCount,
-                                                       global));
+                                          new BasicQosPayload(0, // HACK: it seems RabbitMQ does not implement this: ({amqp_error,not_implemented,"prefetch_size!=0 (32768000)",'basic.qos'})
+                                                              prefetchCount,
+                                                              global));
             return frame.SendAsync(channel)
                         .Log(_ => $"SENT: {_.ToString()}")
-                        .Then(_ => bag.Rpc(BasicQosOk.StaticDescriptor)
+                        .Then(_ => bag.OnRpc(BasicQosOkPayload.StaticDescriptor)
                                       .Register<BasicQosOkFrame>(_.Context))
                         .Log(_ => $"RECEIVED: {_.ToString()}")
                         .LogError();
@@ -221,21 +221,23 @@ namespace Amqp.Net.Client
                                       Boolean exclusive)
         {
             var frame = new BasicConsumeFrame(channelIndex,
-                                              new BasicConsume(0,
-                                                               queueName,
-                                                               consumerTag,
-                                                               noLocal,
-                                                               noAck,
-                                                               exclusive,
-                                                               false,
-                                                               new Table(new Dictionary<String, Object>())));
+                                              new BasicConsumePayload(0,
+                                                                      queueName,
+                                                                      consumerTag,
+                                                                      noLocal,
+                                                                      noAck,
+                                                                      exclusive,
+                                                                      false,
+                                                                      new Table(new Dictionary<String, Object>())));
             return frame.SendAsync(channel)
                         .Log(_ => $"SENT: {_.ToString()}")
-                        .Then(_ => bag.Rpc(BasicConsumeOk.StaticDescriptor)
+                        .Then(_ => bag.OnRpc(BasicConsumeOkPayload.StaticDescriptor)
                                       .Register<BasicConsumeOkFrame>(_.Context))
                         .Log(_ => $"RECEIVED: {_.ToString()}")
-                        .Then(_ => bag.Async(BasicDeliver.StaticDescriptor)
-                                      .Register<BasicDeliverFrame>(_.AsyncContext, _, f => { Console.WriteLine("OK"); }))
+                        .Then(_ => bag.OnConsume(BasicDeliverPayload.StaticDescriptor)
+                                      .Register<BasicDeliverFrame>(_.ConsumeContext,
+                                                                   _,
+                                                                   f => { Console.WriteLine("OK"); }))
                         .LogError();
         }
     }

@@ -4,9 +4,9 @@ using Amqp.Net.Client.Payloads;
 
 namespace Amqp.Net.Client.Frames
 {
-    internal class QueueDeleteOkFrame : MethodFrame<QueueDeleteOk, RpcContext>
+    internal class QueueDeleteOkFrame : MethodFrame<QueueDeleteOkPayload, RpcContext>
     {
-        internal QueueDeleteOkFrame(Int16 channelIndex, QueueDeleteOk payload)
+        internal QueueDeleteOkFrame(Int16 channelIndex, QueueDeleteOkPayload payload)
             : base(new FrameHeader(FrameType.METHOD, channelIndex), payload)
         {
         }

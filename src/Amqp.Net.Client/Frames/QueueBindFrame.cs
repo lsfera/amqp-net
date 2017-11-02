@@ -4,9 +4,9 @@ using Amqp.Net.Client.Payloads;
 
 namespace Amqp.Net.Client.Frames
 {
-    internal class QueueBindFrame : MethodFrame<QueueBind, RpcContext>
+    internal class QueueBindFrame : MethodFrame<QueueBindPayload, RpcContext>
     {
-        internal QueueBindFrame(Int16 channelIndex, QueueBind payload)
+        internal QueueBindFrame(Int16 channelIndex, QueueBindPayload payload)
             : base(new FrameHeader(FrameType.METHOD, channelIndex), payload)
         {
         }

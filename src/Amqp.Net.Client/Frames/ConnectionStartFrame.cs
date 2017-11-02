@@ -7,9 +7,9 @@ using Amqp.Net.Client.Payloads;
 
 namespace Amqp.Net.Client.Frames
 {
-    internal class ConnectionStartFrame : MethodFrame<ConnectionStart, RpcContext>
+    internal class ConnectionStartFrame : MethodFrame<ConnectionStartPayload, RpcContext>
     {
-        internal ConnectionStartFrame(Int16 channel, ConnectionStart payload)
+        internal ConnectionStartFrame(Int16 channel, ConnectionStartPayload payload)
             : base(new FrameHeader(FrameType.METHOD, channel), payload)
         {
         }
@@ -39,10 +39,10 @@ namespace Amqp.Net.Client.Frames
                 throw new Exception("could not find a supported locale"); // TODO: ad-hoc exception
 
             return new ConnectionStartOkFrame(Header.ChannelIndex,
-                                              new ConnectionStartOk(properties,
-                                                                    mechanism,
-                                                                    AuthMechanismMap[mechanism](credentials),
-                                                                    locale));
+                                              new ConnectionStartOkPayload(properties,
+                                                                           mechanism,
+                                                                           AuthMechanismMap[mechanism](credentials),
+                                                                           locale));
         }
 
         // TODO: configure by settings

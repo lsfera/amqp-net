@@ -11,7 +11,7 @@ namespace Amqp.Net.Client.Frames
 
         public FrameHeader Header => new FrameHeader(FrameType.METHOD, 0);
 
-        public IFramePayload Payload => new ProtocolHeader();
+        public IFramePayload Payload => new ProtocolHeaderPayload();
 
         public RpcContext Context => new RpcContext(this);
 

@@ -6,7 +6,7 @@ namespace Amqp.Net.Client.Entities
 {
     internal class ClientCapabilities : Table
     {
-        internal static ClientCapabilities FromServerCapabilities(ConnectionStart payload)
+        internal static ClientCapabilities FromServerCapabilities(ConnectionStartPayload payload)
         {
             var capabilities = payload.ServerProperties.Field<Table>("capabilities") ?? new Table(new Dictionary<String, Object>());
 

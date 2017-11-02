@@ -31,13 +31,13 @@ namespace Amqp.Net.Client
         public Task<IFrame> Result => tcs.Task.Then<TFrame, IFrame>(_ => _);
     }
 
-    internal class AsyncFrameHandlerResult<TFrame> : IFrameHandlerResult
+    internal class ConsumeFrameHandlerResult<TFrame> : IFrameHandlerResult
         where TFrame : class, IFrame
     {
         private readonly IFrame sourceFrame;
         private readonly Action<TFrame> action;
 
-        public AsyncFrameHandlerResult(IFrame sourceFrame, Action<TFrame> action)
+        public ConsumeFrameHandlerResult(IFrame sourceFrame, Action<TFrame> action)
         {
             this.sourceFrame = sourceFrame;
             this.action = action;
@@ -56,8 +56,8 @@ namespace Amqp.Net.Client
         private static readonly ConcurrentDictionary<MethodFrameDescriptor, IFrameHandler<RpcContext>> RpcDescriptorsMap =
             new ConcurrentDictionary<MethodFrameDescriptor, IFrameHandler<RpcContext>>();
 
-        private static readonly ConcurrentDictionary<MethodFrameDescriptor, IFrameHandler<AsyncContext>> AsyncDescriptorsMap =
-            new ConcurrentDictionary<MethodFrameDescriptor, IFrameHandler<AsyncContext>>();
+        private static readonly ConcurrentDictionary<MethodFrameDescriptor, IFrameHandler<ConsumeContext>> ConsumeDescriptorsMap =
+            new ConcurrentDictionary<MethodFrameDescriptor, IFrameHandler<ConsumeContext>>();
 
         internal interface IFrameHandler<in TContext>
             where TContext : IFrameContext
@@ -94,12 +94,12 @@ namespace Amqp.Net.Client
             }
         }
 
-        internal class AsyncFrameHandler : IFrameHandler<AsyncContext>
+        internal class ConsumeFrameHandler : IFrameHandler<ConsumeContext>
         {
             private readonly ConcurrentDictionary<Int16, ConcurrentDictionary<String, BlockingCollection<IFrameHandlerResult>>> ChannelsMap =
                 new ConcurrentDictionary<Int16, ConcurrentDictionary<String, BlockingCollection<IFrameHandlerResult>>>();
 
-            public IFrameHandlerResult Pop(AsyncContext context)
+            public IFrameHandlerResult Pop(ConsumeContext context)
             {
                 var consumers = WithConsumer(AtChannelIndex(context.ChannelIndex),
                                              context.ConsumerTag);
@@ -107,7 +107,7 @@ namespace Amqp.Net.Client
                 return consumers.Take();
             }
 
-            public Task<TFrame> Register<TFrame>(AsyncContext context, Func<IFrameHandlerResult> func)
+            public Task<TFrame> Register<TFrame>(ConsumeContext context, Func<IFrameHandlerResult> func)
                 where TFrame : class, IFrame
             {
                 var consumers = WithConsumer(AtChannelIndex(context.ChannelIndex),
@@ -133,14 +133,14 @@ namespace Amqp.Net.Client
             }
         }
 
-        public IFrameHandler<RpcContext> Rpc(MethodFrameDescriptor descriptor)
+        public IFrameHandler<RpcContext> OnRpc(MethodFrameDescriptor descriptor)
         {
             return RpcDescriptorsMap.GetOrAdd(descriptor, new RpcFrameHandler());
         }
 
-        public IFrameHandler<AsyncContext> Async(MethodFrameDescriptor descriptor)
+        public IFrameHandler<ConsumeContext> OnConsume(MethodFrameDescriptor descriptor)
         {
-            return AsyncDescriptorsMap.GetOrAdd(descriptor, new AsyncFrameHandler());
+            return ConsumeDescriptorsMap.GetOrAdd(descriptor, new ConsumeFrameHandler());
         }
     }
 
@@ -155,13 +155,13 @@ namespace Amqp.Net.Client
             return handler.Register<TFrame>(context, Func);
         }
 
-        internal static Task<TFrame> Register<TFrame>(this MethodFrameBag.IFrameHandler<AsyncContext> handler,
-                                                      AsyncContext context,
+        internal static Task<TFrame> Register<TFrame>(this MethodFrameBag.IFrameHandler<ConsumeContext> handler,
+                                                      ConsumeContext context,
                                                       IFrame sourceFrame,
                                                       Action<TFrame> action)
             where TFrame : class, IFrame
         {
-            IFrameHandlerResult Func() => new AsyncFrameHandlerResult<TFrame>(sourceFrame, action);
+            IFrameHandlerResult Func() => new ConsumeFrameHandlerResult<TFrame>(sourceFrame, action);
 
             return handler.Register<TFrame>(context, Func);
         }
