@@ -2,7 +2,7 @@
 
 namespace Amqp.Net.Client.Frames
 {
-    internal class ConsumeContext : IFrameContext
+    public class ConsumeContext : IFrameContext
     {
         internal ConsumeContext(IFrame frame, String consumerTag)
         {

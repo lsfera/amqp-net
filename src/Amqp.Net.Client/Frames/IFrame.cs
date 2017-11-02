@@ -3,7 +3,7 @@ using Amqp.Net.Client.Payloads;
 
 namespace Amqp.Net.Client.Frames
 {
-    internal interface IFrame
+    public interface IFrame
     {
         FrameHeader Header { get; }
 

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using Amqp.Net.Client.Payloads;
 using DotNetty.Buffers;
@@ -6,12 +7,14 @@ using DotNetty.Common.Utilities;
 
 namespace Amqp.Net.Client.Frames
 {
-    internal abstract class MethodFrame<TPayload, TContext> : Frame<TPayload, TContext>
+    public abstract class MethodFrame<TPayload, TContext> : Frame<TPayload, TContext>
         where TPayload : MethodFramePayload
         where TContext : IFrameContext
     {
-        internal MethodFrame(FrameHeader header, TPayload payload)
-            : base(header, payload)
+        internal MethodFrame(FrameHeader header,
+                             TPayload payload,
+                             IEnumerable<IFrame> children = null)
+            : base(header, payload, children)
         {
         }
 

@@ -2,7 +2,7 @@
 
 namespace Amqp.Net.Client.Frames
 {
-    internal class RpcContext : IFrameContext
+    public class RpcContext : IFrameContext
     {
         internal RpcContext(IFrame frame)
         {

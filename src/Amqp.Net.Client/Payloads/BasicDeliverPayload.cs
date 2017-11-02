@@ -5,7 +5,7 @@ using DotNetty.Buffers;
 
 namespace Amqp.Net.Client.Payloads
 {
-    internal class BasicDeliverPayload : MethodFramePayload
+    public class BasicDeliverPayload : MethodFramePayload
     {
         internal static readonly MethodFrameDescriptor StaticDescriptor = new MethodFrameDescriptor(60, 60);
 

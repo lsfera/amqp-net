@@ -4,7 +4,7 @@ using DotNetty.Buffers;
 
 namespace Amqp.Net.Client.Payloads
 {
-    internal abstract class MethodFramePayload : IFramePayload
+    public abstract class MethodFramePayload : IFramePayload
     {
         internal abstract MethodFrameDescriptor Descriptor { get; }
 

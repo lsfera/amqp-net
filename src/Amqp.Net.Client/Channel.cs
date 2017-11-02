@@ -218,7 +218,8 @@ namespace Amqp.Net.Client
                                       String consumerTag,
                                       Boolean noLocal,
                                       Boolean noAck,
-                                      Boolean exclusive)
+                                      Boolean exclusive,
+                                      Action<BasicDeliverFrame> action)
         {
             var frame = new BasicConsumeFrame(channelIndex,
                                               new BasicConsumePayload(0,
@@ -235,9 +236,7 @@ namespace Amqp.Net.Client
                                       .Register<BasicConsumeOkFrame>(_.Context))
                         .Log(_ => $"RECEIVED: {_.ToString()}")
                         .Then(_ => bag.OnConsume(BasicDeliverPayload.StaticDescriptor)
-                                      .Register<BasicDeliverFrame>(_.ConsumeContext,
-                                                                   _,
-                                                                   f => { Console.WriteLine("OK"); }))
+                                      .Register(_.ConsumeContext, _, action))
                         .LogError();
         }
     }

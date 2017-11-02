@@ -8,36 +8,41 @@ namespace Amqp.Net.Client.Frames
 {
     internal class FrameParser : IFrameParser
     {
-        private static readonly IDictionary<FrameType, Func<FrameHeader, IByteBuffer, IFrame>> Map =
-            new Dictionary<FrameType, Func<FrameHeader, IByteBuffer, IFrame>>
+        private static readonly IDictionary<FrameType, Func<FrameHeader, IByteBuffer, IEnumerable<IFrame>, IFrame>> Map =
+            new Dictionary<FrameType, Func<FrameHeader, IByteBuffer, IEnumerable<IFrame>, IFrame>>
                 {
-                    { FrameType.METHOD, (header, buffer) => MethodFrameDescriptor.Parse(buffer).BuildFrame(header, buffer) },
-                    { FrameType.HEADER, HeaderFrame.Parse },
-                    { FrameType.BODY, BodyFrame.Parse }
+                    { FrameType.METHOD, (header, buffer, children) => MethodFrameDescriptor.Parse(buffer).BuildFrame(header, buffer, children) },
+                    { FrameType.HEADER, (header, buffer, children) => HeaderFrame.Parse(header, buffer) },
+                    { FrameType.BODY, (header, buffer, children) => BodyFrame.Parse(header, buffer) }
                 };
 
         public IFrame Parse(IByteBuffer buffer)
         {
-            var pairs = new List<Tuple<FrameHeader, IByteBuffer>>();
+            var tuple = ReadTuple(buffer);
+            var children = new List<Tuple<FrameHeader, IByteBuffer>>();
 
             while (buffer.ReadableBytes > 0)
-            {
-                var header = FrameHeader.Parse(buffer);
-                var data = buffer.ReadBytes(buffer.ReadInt());
-                buffer.ReadByte();
-                pairs.Add(new Tuple<FrameHeader, IByteBuffer>(header, data));
-            }
+                children.Add(ReadTuple(buffer));
 
-            var frames = pairs.Select(_ =>
-                                      {
-                                          if (!Map.ContainsKey(_.Item1.Type))
-                                              throw new NotSupportedException($"frame of type {_.Item1.Type} is not supported");
+            return FrameMap(tuple, children.Select(_ => FrameMap(_)).ToList());
+        }
 
-                                          return Map[_.Item1.Type](_.Item1, _.Item2);
-                                      })
-                              .ToList();
+        private static IFrame FrameMap(Tuple<FrameHeader, IByteBuffer> tuple,
+                                       IEnumerable<IFrame> children = null)
+        {
+            if (!Map.ContainsKey(tuple.Item1.Type))
+                throw new NotSupportedException($"frame of type {tuple.Item1.Type} is not supported");
 
-            return frames.FirstOrDefault();
+            return Map[tuple.Item1.Type](tuple.Item1, tuple.Item2, children ?? new List<IFrame>());
+        }
+
+        private static Tuple<FrameHeader, IByteBuffer> ReadTuple(IByteBuffer buffer)
+        {
+            var header = FrameHeader.Parse(buffer);
+            var data = buffer.ReadBytes(buffer.ReadInt());
+            buffer.ReadByte();
+
+            return new Tuple<FrameHeader, IByteBuffer>(header, data);
         }
     }
 }
