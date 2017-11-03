@@ -1,7 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 
@@ -53,7 +50,7 @@ namespace Amqp.Net.Client.Extensions
 
         internal static void Log(this Exception exception)
         {
-            WriteEntry(LogLevel.Error, $"{exception.Message}\n{exception.StackTrace}");
+            $"{exception.Message}\n{exception.StackTrace}".Log(LogLevel.Error);
         }
 
         internal static Task<TResult> Log<TResult>(this Task<TResult> task,
@@ -61,33 +58,9 @@ namespace Amqp.Net.Client.Extensions
                                                    LogLevel level = LogLevel.Debug)
         {
             if (task.Exception == null)
-                WriteEntry(level, func(task.Result));
+                func(task.Result).Log(level);
 
             return task;
-        }
-
-        private static void WriteEntry(LogLevel level, String message)
-        {
-            var entry = $"[{Thread.CurrentThread.ManagedThreadId.ToString().PadLeft(3, '0')}][{level.ToString().ToUpperInvariant().PadRight(7, ' ')}]:{message}";
-            Debug.WriteLine(entry);
-            WriteToConsole(level, entry);
-        }
-
-        private static readonly IDictionary<LogLevel, ConsoleColor> ColorMap = new Dictionary<LogLevel, ConsoleColor>
-                                                                                   {
-                                                                                       { LogLevel.Debug, ConsoleColor.Cyan },
-                                                                                       { LogLevel.Information, ConsoleColor.White },
-                                                                                       { LogLevel.Warning, ConsoleColor.Yellow },
-                                                                                       { LogLevel.Trace, ConsoleColor.Blue },
-                                                                                       { LogLevel.Critical, ConsoleColor.DarkRed }
-                                                                                   };
-
-        private static void WriteToConsole(LogLevel level, String message)
-        {
-            var color = Console.ForegroundColor;
-            Console.ForegroundColor = ColorMap[level];
-            Console.WriteLine(message);
-            Console.ForegroundColor = color;
         }
     }
 }
