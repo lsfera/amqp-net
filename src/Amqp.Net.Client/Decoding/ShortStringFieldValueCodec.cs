@@ -6,7 +6,14 @@ namespace Amqp.Net.Client.Decoding
 {
     internal class ShortStringFieldValueCodec : FieldValueCodec<String>
     {
-        internal static readonly FieldValueCodec<String> Instance = new ShortStringFieldValueCodec();
+        private readonly Encoding encoding;
+
+        internal static readonly FieldValueCodec<String> Instance = new ShortStringFieldValueCodec(new UTF8Encoding(true));
+
+        private ShortStringFieldValueCodec(Encoding encoding)
+        {
+            this.encoding = encoding;
+        }
 
         public override Byte Type => 0x73;
 
@@ -16,13 +23,12 @@ namespace Amqp.Net.Client.Decoding
             var destination = new Byte[length];
             buffer.ReadBytes(destination);
 
-            // TODO: we need just one instance per-thread
-            return new UTF8Encoding(true).GetString(destination);
+            return encoding.GetString(destination);
         }
 
         internal override void Encode(String source, IByteBuffer buffer)
         {
-            var bytes = new UTF8Encoding(true).GetBytes(source);
+            var bytes = encoding.GetBytes(source);
             buffer.WriteByte(bytes.Length);
             buffer.WriteBytes(bytes);
         }

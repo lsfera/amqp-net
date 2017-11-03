@@ -7,14 +7,14 @@ using DotNetty.Common.Utilities;
 
 namespace Amqp.Net.Client.Frames
 {
-    public class HeaderFrame : Frame<HeaderFramePayload, RpcContext>
+    public class HeaderFrame : Frame<HeaderFramePayload, EmptyContext>
     {
         internal HeaderFrame(Int16 channelIndex, HeaderFramePayload payload)
             : base(new FrameHeader(FrameType.HEADER, channelIndex), payload)
         {
         }
 
-        public override RpcContext Context => new RpcContext(this); // TODO: not useful
+        public override EmptyContext Context => new EmptyContext(this);
 
         public override Task WriteToAsync(DotNetty.Transport.Channels.IChannel channel)
         {

@@ -21,6 +21,8 @@ namespace Amqp.Net.Client.Frames
 
         public HeaderFrame ContentHeader => Children?.OfType<HeaderFrame>().FirstOrDefault();
 
+        public BodyFrame Body => Children?.OfType<BodyFrame>().FirstOrDefault();
+
         public override String ToString()
         {
             return $"{{\"clr_type\":\"{GetType().Name}\",\"header\":{Header},\"payload\":{Payload},\"content_header\":{ContentHeader}}}";

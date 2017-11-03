@@ -36,7 +36,7 @@ namespace Amqp.Net.Client
                                 if (_.Length == 0)
                                     throw new Exception($"cannot resolve host {uri.Host}"); // TODO: make use of ad-hoc exception
 
-                                var address = Enumerable.First<IPAddress>(_); // TODO: should we just take the first one?
+                                var address = _.First<IPAddress>(); // TODO: should we just take the first one?
                                 var endpoint = new IPEndPoint(address, uri.Port != -1
                                                                   ? uri.Port
                                                                   : DefaultPort);

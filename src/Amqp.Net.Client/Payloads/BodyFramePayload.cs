@@ -3,7 +3,7 @@ using DotNetty.Buffers;
 
 namespace Amqp.Net.Client.Payloads
 {
-    internal class BodyFramePayload : IFramePayload
+    public class BodyFramePayload : IFramePayload
     {
         internal readonly Byte[] Content;
 

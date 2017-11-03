@@ -4,7 +4,7 @@ using DotNetty.Buffers;
 
 namespace Amqp.Net.Client.Frames
 {
-    internal class BodyFrame : Frame<BodyFramePayload, RpcContext>
+    public class BodyFrame : Frame<BodyFramePayload, EmptyContext>
     {
         public BodyFrame(FrameHeader header, BodyFramePayload payload)
             : base(header, payload)
@@ -13,12 +13,10 @@ namespace Amqp.Net.Client.Frames
         
         public static IFrame Parse(FrameHeader header, IByteBuffer buffer)
         {
-            var payload = BodyFramePayload.Parse(buffer);
-
-            return new BodyFrame(header, payload);
+            return new BodyFrame(header, BodyFramePayload.Parse(buffer));
         }
 
-        public override RpcContext Context => new RpcContext(this); // TODO: not useful
+        public override EmptyContext Context => new EmptyContext(this);
 
         public override Task WriteToAsync(DotNetty.Transport.Channels.IChannel channel)
         {

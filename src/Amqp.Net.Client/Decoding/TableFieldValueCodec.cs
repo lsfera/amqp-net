@@ -10,12 +10,10 @@ namespace Amqp.Net.Client.Decoding
     {
         internal static readonly FieldValueCodec<Table> Instance = new TableFieldValueCodec();
 
-        // TODO: should be handled via reflection
         private static readonly IDictionary<Byte, IFieldValueCodec> DecodeMap =
             new Dictionary<Byte, IFieldValueCodec>
                 {
                     { 0x74, BooleanFieldValueCodec.Instance },      // 't' - boolean (OCTET)                      -> Boolean
-                    { 0x62, SByteFieldValueCodec.Instance },        // 'b' - short-short-int (OCTET)              -> SByte
                     { 0x42, ByteFieldValueCodec.Instance },         // 'B' - short-short-uint (OCTET)             -> Byte
                     { 0x55, Int16FieldValueCodec.Instance },        // 'U' - short-int (2*OCTET)                  -> Int16
                     { 0x75, UInt16FieldValueCodec.Instance },       // 'u' - short-uint (2*OCTET)                 -> UInt16
@@ -33,7 +31,6 @@ namespace Amqp.Net.Client.Decoding
             new Dictionary<Type, Func<Object, IFieldValueCodec>>
                 {
                     { typeof(Boolean), _ => BooleanFieldValueCodec.Instance },
-                    { typeof(SByte), _ => SByteFieldValueCodec.Instance },
                     { typeof(Byte), _ => ByteFieldValueCodec.Instance },
                     { typeof(Int16), _ => Int16FieldValueCodec.Instance },
                     { typeof(UInt16), _ => UInt16FieldValueCodec.Instance },
@@ -95,10 +92,12 @@ namespace Amqp.Net.Client.Decoding
 
             foreach (var field in source.Fields)
             {
+                if (field.Value == null)
+                    continue;
+
                 var name = field.Key;
                 name.EncodeFieldName(b);
 
-                // TODO: ensure value is not null?
                 if (!EncodeMap.ContainsKey(field.Value.GetType()))
                     throw new NotSupportedException($"type '{field.Value.GetType()}' is not supported");
 

@@ -6,7 +6,14 @@ namespace Amqp.Net.Client.Decoding
 {
     internal class LongStringFieldValueCodec : FieldValueCodec<String>
     {
-        internal static readonly FieldValueCodec<String> Instance = new LongStringFieldValueCodec();
+        private readonly Encoding encoding;
+
+        internal static readonly FieldValueCodec<String> Instance = new LongStringFieldValueCodec(new UTF8Encoding(true));
+
+        private LongStringFieldValueCodec(Encoding encoding)
+        {
+            this.encoding = encoding;
+        }
 
         public override Byte Type => 0x53;
 
@@ -16,12 +23,12 @@ namespace Amqp.Net.Client.Decoding
             var destination = new Byte[length];
             buffer.ReadBytes(destination);
 
-            return new UTF8Encoding(true).GetString(destination);
+            return encoding.GetString(destination);
         }
 
         internal override void Encode(String source, IByteBuffer buffer)
         {
-            var bytes = new UTF8Encoding(true).GetBytes(source);
+            var bytes = encoding.GetBytes(source);
             buffer.WriteUnsignedInt((UInt32)bytes.Length);
             buffer.WriteBytes(bytes);
         }
