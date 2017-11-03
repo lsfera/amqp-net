@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Threading.Tasks;
 using Amqp.Net.Client.Entities;
-using Amqp.Net.Client.Frames;
 
 namespace Amqp.Net.Client
 {
@@ -49,6 +48,6 @@ namespace Amqp.Net.Client
                                Boolean noLocal,
                                Boolean noAck,
                                Boolean exclusive,
-                               Action<BasicDeliverFrame> action);
+                               Action<ConsumedMessage> action);
     }
 }

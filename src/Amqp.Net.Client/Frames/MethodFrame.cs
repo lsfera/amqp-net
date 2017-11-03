@@ -7,7 +7,7 @@ using DotNetty.Common.Utilities;
 
 namespace Amqp.Net.Client.Frames
 {
-    public abstract class MethodFrame<TPayload, TContext> : Frame<TPayload, TContext>
+    internal abstract class MethodFrame<TPayload, TContext> : Frame<TPayload, TContext>
         where TPayload : MethodFramePayload
         where TContext : IFrameContext
     {

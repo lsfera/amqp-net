@@ -2,7 +2,7 @@
 
 namespace Amqp.Net.Client.Frames
 {
-    public class EmptyContext : IFrameContext
+    internal class EmptyContext : IFrameContext
     {
         internal EmptyContext(IFrame frame)
         {

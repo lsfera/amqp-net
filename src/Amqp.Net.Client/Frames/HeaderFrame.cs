@@ -7,9 +7,9 @@ using DotNetty.Common.Utilities;
 
 namespace Amqp.Net.Client.Frames
 {
-    public class HeaderFrame : Frame<HeaderFramePayload, EmptyContext>
+    internal class HeaderFrame : Frame<HeaderPayload, EmptyContext>
     {
-        internal HeaderFrame(Int16 channelIndex, HeaderFramePayload payload)
+        internal HeaderFrame(Int16 channelIndex, HeaderPayload payload)
             : base(new FrameHeader(FrameType.HEADER, channelIndex), payload)
         {
         }
@@ -35,9 +35,9 @@ namespace Amqp.Net.Client.Frames
             return channel.WriteAndFlushAsync(buffer);
         }
 
-        public static IFrame Parse(FrameHeader header, IByteBuffer buffer)
+        internal static IFrame Parse(FrameHeader header, IByteBuffer buffer)
         {
-            return new HeaderFrame(header.ChannelIndex, HeaderFramePayload.Parse(buffer));
+            return new HeaderFrame(header.ChannelIndex, HeaderPayload.Parse(buffer));
         }
     }
 }

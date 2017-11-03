@@ -6,7 +6,7 @@ using Amqp.Net.Client.Payloads;
 
 namespace Amqp.Net.Client.Frames
 {
-    public class BasicDeliverFrame : MethodFrame<BasicDeliverPayload, ConsumeContext>
+    internal class BasicDeliverFrame : MethodFrame<BasicDeliverPayload, ConsumeContext>
     {
         internal BasicDeliverFrame(Int16 channelIndex,
                                    BasicDeliverPayload payload,
@@ -26,6 +26,15 @@ namespace Amqp.Net.Client.Frames
         public override String ToString()
         {
             return $"{{\"clr_type\":\"{GetType().Name}\",\"header\":{Header},\"payload\":{Payload},\"content_header\":{ContentHeader}}}";
+        }
+
+        internal ConsumedMessage ToConsumedMessage()
+        {
+            // TODO: should never be null, but an aditional check is welcome.
+            var properties = Children.OfType<HeaderFrame>().FirstOrDefault().Payload.Fields;
+            var body = Children?.OfType<BodyFrame>().SelectMany(_ => _.Payload.Content).ToArray();
+
+            return new ConsumedMessage(properties, body);
         }
     }
 }

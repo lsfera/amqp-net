@@ -219,7 +219,7 @@ namespace Amqp.Net.Client
                                       Boolean noLocal,
                                       Boolean noAck,
                                       Boolean exclusive,
-                                      Action<BasicDeliverFrame> action)
+                                      Action<ConsumedMessage> action)
         {
             var frame = new BasicConsumeFrame(channelIndex,
                                               new BasicConsumePayload(0,
@@ -230,13 +230,18 @@ namespace Amqp.Net.Client
                                                                       exclusive,
                                                                       false,
                                                                       new Table(new Dictionary<String, Object>())));
+
+            void Action(BasicDeliverFrame f) { action(f.ToConsumedMessage()); }
+
             return frame.SendAsync(channel)
                         .Log(_ => $"SENT: {_.ToString()}")
                         .Then(_ => bag.OnRpc(BasicConsumeOkPayload.StaticDescriptor)
                                       .Register<BasicConsumeOkFrame>(_.Context))
                         .Log(_ => $"RECEIVED: {_.ToString()}")
                         .Then(_ => bag.OnConsume(BasicDeliverPayload.StaticDescriptor)
-                                      .Register(_.ConsumeContext, _, action))
+                                      .Register(_.ConsumeContext,
+                                                _,
+                                                (Action<BasicDeliverFrame>)Action))
                         .LogError();
         }
     }

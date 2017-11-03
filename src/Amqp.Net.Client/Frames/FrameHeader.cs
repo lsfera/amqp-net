@@ -4,7 +4,7 @@ using DotNetty.Buffers;
 
 namespace Amqp.Net.Client.Frames
 {
-    public struct FrameHeader
+    internal struct FrameHeader
     {
         internal readonly FrameType Type;
         internal readonly Int16 ChannelIndex;
@@ -15,7 +15,7 @@ namespace Amqp.Net.Client.Frames
             ChannelIndex = channelIndex;
         }
 
-        public static FrameHeader Parse(IByteBuffer buffer)
+        internal static FrameHeader Parse(IByteBuffer buffer)
         {
             return new FrameHeader((FrameType)buffer.ReadByte(),
                                    buffer.ReadShort());

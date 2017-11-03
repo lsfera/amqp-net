@@ -4,7 +4,7 @@ using System.Linq;
 
 namespace Amqp.Net.Client.Entities
 {
-    internal class Table : IEquatable<Table>
+    public class Table : IEquatable<Table>
     {
         internal readonly IDictionary<String, Object> Fields;
 

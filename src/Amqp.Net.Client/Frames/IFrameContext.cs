@@ -2,7 +2,7 @@
 
 namespace Amqp.Net.Client.Frames
 {
-    public interface IFrameContext
+    internal interface IFrameContext
     {
         Int16 ChannelIndex { get; }
     }

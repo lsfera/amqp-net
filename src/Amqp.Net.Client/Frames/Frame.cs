@@ -5,11 +5,11 @@ using Amqp.Net.Client.Payloads;
 
 namespace Amqp.Net.Client.Frames
 {
-    public abstract class Frame<TPayload, TContext> : IFrame
+    internal abstract class Frame<TPayload, TContext> : IFrame
         where TPayload : class, IFramePayload
         where TContext : IFrameContext
     {
-        public readonly IEnumerable<IFrame> Children;
+        internal readonly IEnumerable<IFrame> Children;
         public readonly TPayload Payload;
 
         internal Frame(FrameHeader header, TPayload payload, IEnumerable<IFrame> children = null)

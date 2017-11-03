@@ -3,11 +3,11 @@ using DotNetty.Buffers;
 
 namespace Amqp.Net.Client.Payloads
 {
-    public class BodyFramePayload : IFramePayload
+    public class BodyPayload : IFramePayload
     {
         internal readonly Byte[] Content;
 
-        public BodyFramePayload(Byte[] content)
+        public BodyPayload(Byte[] content)
         {
             Content = content;
         }
@@ -17,12 +17,15 @@ namespace Amqp.Net.Client.Payloads
             buffer.WriteBytes(Content);
         }
 
-        public static BodyFramePayload Parse(IByteBuffer buffer)
+        public static BodyPayload Parse(IByteBuffer buffer)
         {
+            if (buffer.ReadableBytes <= 0)
+                return new BodyPayload(new Byte[] { });
+
             var content = new Byte[buffer.ReadableBytes];
             buffer.ReadBytes(content);
 
-            return new BodyFramePayload(content);
+            return new BodyPayload(content);
         }
     }
 }
