@@ -6,6 +6,7 @@
 # Custom rules
 tools/artifacts
 tools/build/cake
+tools/docker/.vagrant
 
 # User-specific files
 *.suo
