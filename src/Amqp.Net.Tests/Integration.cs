@@ -1,13 +1,19 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Net;
+using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using Amqp.Net.Client;
 using Amqp.Net.Client.Entities;
 using DotNetty.Common.Internal.Logging;
 using Microsoft.Extensions.Configuration;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using Xunit;
 using Xunit.Abstractions;
+using Connection = Amqp.Net.Client.Connection;
 
 namespace Amqp.Net.Tests
 {
@@ -15,11 +21,10 @@ namespace Amqp.Net.Tests
     {
         private const string DockerNetworkName = "bridgeWhaleNet";
         private const string RabbitContainerName = "rmq";
+        private const int DefaultTimeoutSeconds = 10;
 
         private readonly ITestOutputHelper outputHelper;
         private readonly DockerProxy dockerProxy;
-        private string networkId;
-        private string containerId;
 
         public Integration(ITestOutputHelper testOutputHelper)
         {
@@ -31,7 +36,7 @@ namespace Amqp.Net.Tests
         {
             await DisposeAsync();
 
-            networkId = await dockerProxy.CreateNetworkAsync(DockerNetworkName);
+            await dockerProxy.CreateNetworkAsync(DockerNetworkName);
 
             var portMappings = new Dictionary<string, ISet<string>>
             {
@@ -43,14 +48,29 @@ namespace Amqp.Net.Tests
                 { "25672",new HashSet<string>(){ "25672" } }
             };
             var envVars = new List<string> { "RABBITMQ_DEFAULT_VHOST=test" };
-            containerId = await dockerProxy.CreateContainerAsync("rabbitmq:management", RabbitContainerName, portMappings, DockerNetworkName, envVars);
+            var containerId = await dockerProxy.CreateContainerAsync("rabbitmq:management", RabbitContainerName, portMappings, DockerNetworkName, envVars);
             await dockerProxy.StartContainerAsync(containerId);
+            await WaitForRabbitMqReady(new CancellationTokenSource(TimeSpan.FromSeconds(DefaultTimeoutSeconds)).Token);
         }
 
         [Fact]
-        public void Dummy()
+        public async Task CreateExchange()
         {
-            Assert.True(true);
+            InternalLoggerFactory.DefaultFactory.AddProvider(new TestOtputLoggerProvider(outputHelper));
+
+            const string testXchg = "test-xchg";
+            var ipEndPoint = new IPEndPoint(IPAddress.Parse(Configuration.RabbitMqHost), Configuration.RabbitMqClientPort);
+            var networkCredential = new NetworkCredential(Configuration.RabbitMqUser, Configuration.RabbitMqPassword);
+            var connectionString = new ConnectionString(ipEndPoint, networkCredential, Configuration.RabbitMqVirtualHost);
+            using (var connection = await Connection.ConnectAsync(connectionString))
+            using (var channel = await connection.OpenChannelAsync())
+            {
+                await channel.ExchangeDeclareAsync(testXchg, ExchangeType.Direct, true, false, false);
+            }
+
+            // TODO: Use RabbitMQ web managment API to retrieve exchanges
+            var retrievedExchangeName = testXchg;
+            Assert.Equal(testXchg, retrievedExchangeName);
         }
 
         public async Task DisposeAsync()
@@ -63,6 +83,50 @@ namespace Amqp.Net.Tests
         public void Dispose()
         {
             dockerProxy.Dispose();
+        }
+
+        private async Task WaitForRabbitMqReady(CancellationToken token)
+        {
+            while (true)
+            {
+                token.ThrowIfCancellationRequested();
+                if (IsRabbitMqReady())
+                    return;
+                await Task.Delay(500, token);
+            }
+        }
+
+        public bool IsRabbitMqReady()
+        {
+            var path = $"aliveness-test/{Configuration.RabbitMqVirtualHost.Replace("/", "%2f")}";
+            var requestUri = new Uri($"http://{Configuration.RabbitMqHost}:{Configuration.RabbitMqManagementPort}/api/{path}");
+            var webRequest = (HttpWebRequest)WebRequest.Create(requestUri);
+            webRequest.Credentials = (ICredentials)new NetworkCredential(Configuration.RabbitMqUser, Configuration.RabbitMqPassword);
+
+            try
+            {
+                var response = MakeRequest(webRequest);
+                return JObject.Parse(response).SelectToken("status").Value<string>() == "ok";
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private static string MakeRequest(WebRequest webRequest)
+        {
+            using (var httpResponse = (HttpWebResponse) webRequest.GetResponse())
+            {
+                if (httpResponse.StatusCode != HttpStatusCode.OK)
+                    throw new Exception($"Status code {httpResponse.StatusCode}");
+
+                using (var responseStream = httpResponse.GetResponseStream())
+                using (var streamReader = new StreamReader(responseStream))
+                {
+                    return streamReader.ReadToEnd();
+                }
+            }
         }
     }
 }
