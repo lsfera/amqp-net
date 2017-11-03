@@ -59,8 +59,6 @@ Vagrant.configure("2") do |config|
     echo "*** Installing Docker Engine"
     wget -qO- https://get.docker.com/ | sudo bash
     sudo usermod -aG docker vagrant
-    echo "*** Enabling debug logs to /var/log/upstart/docker.log"
-    echo '{ "debug": true }' > /etc/docker/daemon.json
     echo "*** Enabling socket and HTTP Docker APIs"
     echo "Usage:"
     echo "echo -e 'GET /images/json HTTP/1.0\\\\r\\\\n' | netcat -U /var/run/docker.sock\r\n"
