@@ -20,6 +20,8 @@ namespace Amqp.Net.Tests
     public class Integration : IAsyncLifetime, IDisposable
     {
         private const string DockerNetworkName = "bridgeWhaleNet";
+        private const string RabbitImageName = "rabbitmq";
+        private const string RabbitImageTag = "management";
         private const string RabbitContainerName = "rmq";
         private const int DefaultTimeoutSeconds = 10;
 
@@ -38,6 +40,7 @@ namespace Amqp.Net.Tests
 
             await dockerProxy.CreateNetworkAsync(DockerNetworkName);
 
+            await dockerProxy.PullImageAsync(RabbitImageName, RabbitImageTag);
             var portMappings = new Dictionary<string, ISet<string>>
             {
                 { "4369", new HashSet<string>(){ "4369" } },
@@ -48,7 +51,7 @@ namespace Amqp.Net.Tests
                 { "25672",new HashSet<string>(){ "25672" } }
             };
             var envVars = new List<string> { "RABBITMQ_DEFAULT_VHOST=test" };
-            var containerId = await dockerProxy.CreateContainerAsync("rabbitmq:management", RabbitContainerName, portMappings, DockerNetworkName, envVars);
+            var containerId = await dockerProxy.CreateContainerAsync($"{RabbitImageName}:{RabbitImageTag}", RabbitContainerName, portMappings, DockerNetworkName, envVars);
             await dockerProxy.StartContainerAsync(containerId);
             await WaitForRabbitMqReady(new CancellationTokenSource(TimeSpan.FromSeconds(DefaultTimeoutSeconds)).Token);
         }

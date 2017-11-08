@@ -31,6 +31,17 @@ namespace Amqp.Net.Tests
             return response.ID;
         }
 
+        public async Task PullImageAsync(string image, string tag, CancellationToken token = default(CancellationToken))
+        {
+            var createParameters = new ImagesCreateParameters
+            {
+                FromImage = image,
+                Tag = tag
+            };
+            var progress = new Progress<JSONMessage>(jsonMessage => { });
+            await client.Images.CreateImageAsync(createParameters, null, progress, token);
+        }
+
         public async Task<string> CreateContainerAsync(string image, string name, IDictionary<string, ISet<string>> portMappings, string networkName = null, IList<string> envVars = null, CancellationToken token = default(CancellationToken))
         {
             var createParameters = new CreateContainerParameters
