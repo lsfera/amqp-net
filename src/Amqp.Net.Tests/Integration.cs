@@ -2,24 +2,23 @@
 using System.Net;
 using System.Threading.Tasks;
 using Amqp.Net.Client;
-using Amqp.Net.Client.Entities;
-using DotNetty.Common.Internal.Logging;
-using RabbitMqHttpApiClient.API;
+using EasyNetQ.Management.Client;
+using EasyNetQ.Management.Client.Model;
 using Xunit;
-using Xunit.Abstractions;
 using Connection = Amqp.Net.Client.Connection;
+using ExchangeType = Amqp.Net.Client.Entities.ExchangeType;
 
 namespace Amqp.Net.Tests
 {
     public class Integration : IClassFixture<RabbitMqFixture>
     {
-        private readonly RabbitMqApi rabbitMqManagementApi;
 
-        public Integration(ITestOutputHelper testOutputHelper)
+        private readonly ManagementClient  rabbitMqManagementApi;
+
+        public Integration()
         {
-            var rabbitMqUrl = $"http://{Configuration.RabbitMqHost}:{Configuration.RabbitMqManagementPort}";
-            rabbitMqManagementApi = rabbitMqManagementApi = new RabbitMqApi(rabbitMqUrl, Configuration.RabbitMqUser, Configuration.RabbitMqPassword);
-            //InternalLoggerFactory.DefaultFactory.AddProvider(new TestOtputLoggerProvider(testOutputHelper));
+
+            rabbitMqManagementApi =  new ManagementClient(Configuration.RabbitMqHost, Configuration.RabbitMqUser, Configuration.RabbitMqPassword, Configuration.RabbitMqManagementPort);
         }
 
         [Fact]
@@ -44,7 +43,7 @@ namespace Amqp.Net.Tests
                 connection?.Dispose();
             }
 
-            var retrievedExchange = await rabbitMqManagementApi.GetExchangeByVhostAndName(Configuration.RabbitMqVirtualHost, exchangeName);
+            var retrievedExchange = rabbitMqManagementApi.GetExchange(exchangeName, Configuration.RabbitMqVirtualHost);
 
             Assert.NotNull(retrievedExchange);
             Assert.Equal(retrievedExchange.Name, exchangeName);
@@ -75,7 +74,7 @@ namespace Amqp.Net.Tests
                 connection?.Dispose();
             }
 
-            var retrievedQueue = await rabbitMqManagementApi.GetQueueByVhostAndName(Configuration.RabbitMqVirtualHost, queueName);
+            var retrievedQueue = rabbitMqManagementApi.GetQueue(queueName, Configuration.RabbitMqVirtualHost);
 
             Assert.NotNull(retrievedQueue);
             Assert.Equal(retrievedQueue.Name, queueName);
@@ -91,7 +90,7 @@ namespace Amqp.Net.Tests
             var ipAddress = IPAddress.Parse(Configuration.RabbitMqHost);
             var ipEndPoint = new IPEndPoint(ipAddress, Configuration.RabbitMqClientPort);
             var networkCredential = new NetworkCredential(Configuration.RabbitMqUser, Configuration.RabbitMqPassword);
-            var connectionString = new ConnectionString(ipEndPoint, networkCredential, Configuration.RabbitMqVirtualHost);
+            var connectionString = new ConnectionString(ipEndPoint, networkCredential, Configuration.RabbitMqVirtualHostName);
 
             Task<IChannel> OpenConnection(Task<IConnection> _)
             {

@@ -2,10 +2,9 @@
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using DotNetty.Common.Internal.Logging;
-using RabbitMqHttpApiClient.API;
+using EasyNetQ.Management.Client;
+using EasyNetQ.Management.Client.Model;
 using Xunit;
-using Xunit.Abstractions;
 
 namespace Amqp.Net.Tests
 {
@@ -63,20 +62,19 @@ namespace Amqp.Net.Tests
             while (true)
             {
                 token.ThrowIfCancellationRequested();
-                if (await IsRabbitMqReady())
+                if (IsRabbitMqReady())
                     return;
                 await Task.Delay(500, token);
             }
         }
 
-        private static async Task<bool> IsRabbitMqReady()
+        private static bool IsRabbitMqReady()
         {
-            var rabbitMqUrl = $"http://{Configuration.RabbitMqHost}:{Configuration.RabbitMqManagementPort}";
-            var rabbitMqManagementApi = new RabbitMqApi(rabbitMqUrl, Configuration.RabbitMqUser, Configuration.RabbitMqPassword);
+            var rabbitMqManagementApi = new ManagementClient(Configuration.RabbitMqHost, Configuration.RabbitMqUser, Configuration.RabbitMqPassword, Configuration.RabbitMqManagementPort);
 
             try
             {
-                return await rabbitMqManagementApi.GetDefinitionByVhost(Configuration.RabbitMqVirtualHost) != null;
+                return rabbitMqManagementApi.IsAlive(Configuration.RabbitMqVirtualHost);
             }
             catch
             {

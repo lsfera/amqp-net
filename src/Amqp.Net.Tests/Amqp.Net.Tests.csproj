@@ -10,17 +10,17 @@
     <PackageReference Include="DotNetty.Handlers" Version="0.4.6" />
     <PackageReference Include="Microsoft.Extensions.Configuration" Version="2.0.0" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="2.0.0" />
-    <PackageReference Include="Moq" Version="4.7.137" />
-    <PackageReference Include="RabbitMqHttpApiClient" Version="1.0.5" />
+    <PackageReference Include="Moq" Version="4.7.145" />
     <PackageReference Include="xunit" Version="2.3.0" />
-    <PackageReference Include="xunit" Version="2.3.0" />
-    <PackageReference Include="xunit.runner.console" Version="2.3.0" />
-    <PackageReference Include="xunit.runner.visualstudio" Version="2.3.0" />
+    <PackageReference Include="xunit" Version="2.3.1" />
+    <PackageReference Include="xunit.runner.console" Version="2.3.1" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.3.1" />
     <DotNetCliToolReference Include="dotnet-xunit" Version="2.3.0" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\Amqp.Net.Client\Amqp.Net.Client.csproj" />
+    <ProjectReference Include="..\EasyNetQ.Management.Client\EasyNetQ.Management.Client.csproj" />
   </ItemGroup>
 
   <ItemGroup>

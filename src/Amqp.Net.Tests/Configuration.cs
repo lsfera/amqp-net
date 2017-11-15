@@ -1,6 +1,6 @@
 ﻿using System;
 using System.IO;
-using Amqp.Net.Client;
+using EasyNetQ.Management.Client.Model;
 using Microsoft.Extensions.Configuration;
 
 namespace Amqp.Net.Tests
@@ -13,7 +13,8 @@ namespace Amqp.Net.Tests
         private readonly string rabbitMqHost;
         private readonly int rabbitMqClientPort;
         private readonly int rabbitMqManagementPort;
-        private readonly string rabbitMqVirtualHost;
+        private readonly string rabbitMqVirtualHostName;
+        private readonly Vhost rabbitMqVirtualHost;
         private readonly string rabbitMqUser;
         private readonly string rabbitMqPassword;
 
@@ -27,7 +28,9 @@ namespace Amqp.Net.Tests
 
         public static int RabbitMqManagementPort => Instance.rabbitMqManagementPort;
 
-        public static string RabbitMqVirtualHost => Instance.rabbitMqVirtualHost;
+        public static string RabbitMqVirtualHostName => Instance.rabbitMqVirtualHostName;
+
+        public static Vhost RabbitMqVirtualHost => Instance.rabbitMqVirtualHost;
 
         public static string RabbitMqUser => Instance.rabbitMqUser;
 
@@ -44,7 +47,8 @@ namespace Amqp.Net.Tests
             rabbitMqHost = settings["rabbitMqHost"];
             rabbitMqClientPort = int.Parse(settings["rabbitMqClientPort"]);
             rabbitMqManagementPort = int.Parse(settings["rabbitMqManagementPort"]);
-            rabbitMqVirtualHost = settings["rabbitMqVirtualHost"];
+            rabbitMqVirtualHostName = settings["rabbitMqVirtualHost"];
+            rabbitMqVirtualHost = new Vhost { Name = rabbitMqVirtualHostName, Tracing = false };
             rabbitMqUser = settings["rabbitMqUser"];
             rabbitMqPassword = settings["rabbitMqPassword"];
         }
