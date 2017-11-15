@@ -54,6 +54,36 @@ namespace Amqp.Net.Tests
             Assert.Equal(retrievedExchange.Internal, isInternal);
         }
 
+        [Fact]
+        public async Task CreateQueue()
+        {
+            const string queueName = "test-queue";
+            const bool isDurable = true;
+            const bool isExclusive = false;
+            const bool isAutoDelete = false;
+
+            IConnection connection = null;
+            IChannel channel = null;
+            try
+            {
+                (connection, channel) = await BootstrapRabbit();
+                await channel.QueueDeclareAsync(queueName, isDurable, isExclusive, isAutoDelete);
+            }
+            finally
+            {
+                channel?.Dispose();
+                connection?.Dispose();
+            }
+
+            var retrievedQueue = await rabbitMqManagementApi.GetQueueByVhostAndName(Configuration.RabbitMqVirtualHost, queueName);
+
+            Assert.NotNull(retrievedQueue);
+            Assert.Equal(retrievedQueue.Name, queueName);
+            Assert.Equal(retrievedQueue.Durable, isDurable);
+            Assert.Equal(retrievedQueue.Exclusive, isExclusive);
+            Assert.Equal(retrievedQueue.AutoDelete, isAutoDelete);
+        }
+
         private Task<(IConnection connection, IChannel channel)> BootstrapRabbit()
         {
             IConnection connection = null;
