@@ -2,15 +2,13 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Net;
-using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using Amqp.Net.Client;
 using Amqp.Net.Client.Entities;
 using DotNetty.Common.Internal.Logging;
-using Microsoft.Extensions.Configuration;
-using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using RabbitMqHttpApiClient.API;
 using Xunit;
 using Xunit.Abstractions;
 using Connection = Amqp.Net.Client.Connection;
@@ -71,9 +69,9 @@ namespace Amqp.Net.Tests
                 await channel.ExchangeDeclareAsync(testXchg, ExchangeType.Direct, true, false, false);
             }
 
-            // TODO: Use RabbitMQ web managment API to retrieve exchanges
-            var retrievedExchangeName = testXchg;
-            Assert.Equal(testXchg, retrievedExchangeName);
+            var retrievedExchangeName = await new RabbitMqApi($"http://{Configuration.RabbitMqHost}:{Configuration.RabbitMqManagementPort}",
+                Configuration.RabbitMqUser, Configuration.RabbitMqPassword).GetExchangeByVhostAndName(Configuration.RabbitMqVirtualHost, testXchg).ConfigureAwait(false);
+            Assert.NotNull(retrievedExchangeName);
         }
 
         public async Task DisposeAsync()
@@ -99,7 +97,7 @@ namespace Amqp.Net.Tests
             }
         }
 
-        public bool IsRabbitMqReady()
+        private bool IsRabbitMqReady()
         {
             var path = $"aliveness-test/{Configuration.RabbitMqVirtualHost.Replace("/", "%2f")}";
             var requestUri = new Uri($"http://{Configuration.RabbitMqHost}:{Configuration.RabbitMqManagementPort}/api/{path}");
