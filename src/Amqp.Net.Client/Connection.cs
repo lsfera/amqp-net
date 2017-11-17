@@ -48,7 +48,7 @@ namespace Amqp.Net.Client
                                                .Option(ChannelOption.TcpNodelay, true)
                                                .Option(ChannelOption.SoKeepalive, true)
                                                .Handler(handler)
-                                               .ConnectAsync(connectionString.Endpoint); // TODO: handle error
+                                               .ConnectAsync(connectionString.Endpoint).ConfigureAwait(false); // TODO: handle error
 
             return await ProtocolHeaderFrame.Instance
                                             .SendAsync(channel)
@@ -68,7 +68,7 @@ namespace Amqp.Net.Client
                                                           .Register<ConnectionOpenOkFrame>(_.Context))
                                             .Log(_ => $"RECEIVED: {_.ToString()}")
                                             .Then(_ => new Connection(group, channel, bag, _.Header.ChannelIndex))
-                                            .LogError();
+                                            .LogError().ConfigureAwait(false);
         }
 
         public Task<IChannel> OpenChannelAsync()

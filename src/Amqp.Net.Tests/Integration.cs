@@ -35,8 +35,8 @@ namespace Amqp.Net.Tests
             IChannel channel = null;
             try
             {
-                (connection, channel) = await BootstrapRabbit();
-                await channel.ExchangeDeclareAsync(exchangeName, exchangeType, isDurable, isAutodelete, isInternal);
+                (connection, channel) = await BootstrapRabbit().ConfigureAwait(false);
+                await channel.ExchangeDeclareAsync(exchangeName, exchangeType, isDurable, isAutodelete, isInternal).ConfigureAwait(false);
             }
             finally
             {
@@ -44,7 +44,7 @@ namespace Amqp.Net.Tests
                 connection?.Dispose();
             }
 
-            var retrievedExchange = rabbitMqManagementApi.GetExchange(exchangeName, Configuration.RabbitMqVirtualHost);
+            var retrievedExchange = await rabbitMqManagementApi.GetExchangeAsync(exchangeName, Configuration.RabbitMqVirtualHost).ConfigureAwait(false);
 
             Assert.NotNull(retrievedExchange);
             Assert.Equal(retrievedExchange.Name, exchangeName);
@@ -61,23 +61,30 @@ namespace Amqp.Net.Tests
             const ExchangeType exchangeType = ExchangeType.Direct;
             const bool isUnused = true;
 
-            var exchange = rabbitMqManagementApi.CreateExchange(new ExchangeInfo(exchangeName, exchangeType.ToString().ToLower()), Configuration.RabbitMqVirtualHost);
+            var exchange = rabbitMqManagementApi.CreateExchangeAsync(new ExchangeInfo(exchangeName, exchangeType.ToString().ToLower()), Configuration.RabbitMqVirtualHost);
             Assert.NotNull(exchange);
 
             IConnection connection = null;
             IChannel channel = null;
             try
             {
-                (connection, channel) = await BootstrapRabbit();
-                await channel.ExchangeDeleteAsync(exchangeName, isUnused);
+                (connection, channel) = await BootstrapRabbit().ConfigureAwait(false);
+                await channel.ExchangeDeleteAsync(exchangeName, isUnused).ConfigureAwait(false);
             }
             finally
             {
                 channel?.Dispose();
                 connection?.Dispose();
             }
-
-            Assert.Throws<UnexpectedHttpStatusCodeException>(() => rabbitMqManagementApi.GetExchange(exchangeName, Configuration.RabbitMqVirtualHost));
+            try
+            {
+                await rabbitMqManagementApi.GetExchangeAsync(exchangeName, Configuration.RabbitMqVirtualHost).ConfigureAwait(false);
+            }
+            catch (Exception e)
+            {
+                Assert.IsType<UnexpectedHttpStatusCodeException>(e);
+            }
+            
         }
 
         [Fact]
@@ -92,8 +99,8 @@ namespace Amqp.Net.Tests
             IChannel channel = null;
             try
             {
-                (connection, channel) = await BootstrapRabbit();
-                await channel.QueueDeclareAsync(queueName, isDurable, isExclusive, isAutoDelete);
+                (connection, channel) = await BootstrapRabbit().ConfigureAwait(false);
+                await channel.QueueDeclareAsync(queueName, isDurable, isExclusive, isAutoDelete).ConfigureAwait(false);
             }
             finally
             {
@@ -101,7 +108,7 @@ namespace Amqp.Net.Tests
                 connection?.Dispose();
             }
 
-            var retrievedQueue = rabbitMqManagementApi.GetQueue(queueName, Configuration.RabbitMqVirtualHost);
+            var retrievedQueue = await rabbitMqManagementApi.GetQueueAsync(queueName, Configuration.RabbitMqVirtualHost).ConfigureAwait(false);
 
             Assert.NotNull(retrievedQueue);
             Assert.Equal(retrievedQueue.Name, queueName);
@@ -121,16 +128,22 @@ namespace Amqp.Net.Tests
             IChannel channel = null;
             try
             {
-                (connection, channel) = await BootstrapRabbit();
-                await channel.QueueDeleteAsync(queueName, ifUnused, ifEmpty);
+                (connection, channel) = await BootstrapRabbit().ConfigureAwait(false);
+                await channel.QueueDeleteAsync(queueName, ifUnused, ifEmpty).ConfigureAwait(false);
             }
             finally
             {
                 channel?.Dispose();
                 connection?.Dispose();
             }
-
-            Assert.Throws<UnexpectedHttpStatusCodeException>(() => rabbitMqManagementApi.GetQueue(queueName, Configuration.RabbitMqVirtualHost));
+            try
+            {
+                await rabbitMqManagementApi.GetQueueAsync(queueName, Configuration.RabbitMqVirtualHost).ConfigureAwait(false);
+            }
+            catch (Exception e)
+            {
+                Assert.IsType<UnexpectedHttpStatusCodeException>(e);
+            }
 
         }
 
@@ -152,10 +165,10 @@ namespace Amqp.Net.Tests
             IChannel channel = null;
             try
             {
-                (connection, channel) = await BootstrapRabbit();
-                await channel.ExchangeDeclareAsync(exchangeName, exchangeType, isDurable, isAutodelete, isInternal);
-                await channel.QueueDeclareAsync(queueName, isDurable, isExclusive, isAutoDelete);
-                await channel.QueueBindAsync(queueName, exchangeName, routingKey);
+                (connection, channel) = await BootstrapRabbit().ConfigureAwait(false);
+                await channel.ExchangeDeclareAsync(exchangeName, exchangeType, isDurable, isAutodelete, isInternal).ConfigureAwait(false);
+                await channel.QueueDeclareAsync(queueName, isDurable, isExclusive, isAutoDelete).ConfigureAwait(false);
+                await channel.QueueBindAsync(queueName, exchangeName, routingKey).ConfigureAwait(false);
             }
             finally
             {
@@ -163,8 +176,8 @@ namespace Amqp.Net.Tests
                 connection?.Dispose();
             }
 
-            var retrievedQueue = rabbitMqManagementApi.GetQueue(queueName, Configuration.RabbitMqVirtualHost);
-            var bindings = rabbitMqManagementApi.GetBindingsForQueue(retrievedQueue).ToList();
+            var retrievedQueue = await rabbitMqManagementApi.GetQueueAsync(queueName, Configuration.RabbitMqVirtualHost).ConfigureAwait(false);
+            var bindings = (await rabbitMqManagementApi.GetBindingsForQueueAsync(retrievedQueue).ConfigureAwait(false)).ToList();
 
             bool BindingFilter(Binding binding) => binding.Source == exchangeName 
                                             && binding.Destination == queueName 
@@ -173,7 +186,7 @@ namespace Amqp.Net.Tests
         }
 
 
-        private Task<(IConnection connection, IChannel channel)> BootstrapRabbit()
+        private static Task<(IConnection connection, IChannel channel)> BootstrapRabbit()
         {
             IConnection connection = null;
             IChannel channel = null;

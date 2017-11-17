@@ -1,29 +1,28 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Net;
-using System.Reflection;
-using System.Text;
-using EasyNetQ.Management.Client.Model;
-using EasyNetQ.Management.Client.Serialization;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Converters;
-using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 using System.Net.Http;
 using System.Net.Http.Headers;
+using System.Reflection;
+using System.Text;
+using System.Text.RegularExpressions;
+using System.Threading.Tasks;
+using EasyNetQ.Management.Client.Model;
+using EasyNetQ.Management.Client.Serialization;
+using JetBrains.Annotations;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
 
 namespace EasyNetQ.Management.Client
 {
     public class ManagementClient : IManagementClient
     {
-        private static readonly MediaTypeWithQualityHeaderValue JsonMediaTypeHeaderValue = new MediaTypeWithQualityHeaderValue("application/json");
+        private static readonly MediaTypeWithQualityHeaderValue JsonMediaTypeHeaderValue =
+            new MediaTypeWithQualityHeaderValue("application/json");
+
         public static readonly JsonSerializerSettings Settings;
 
-        private readonly string hostUrl;
-        private readonly string username;
         private readonly string password;
-        private readonly int portNumber;
-        private readonly bool runningOnMono;
         private readonly Action<HttpRequestMessage> configureRequest;
         private readonly TimeSpan defaultTimeout = TimeSpan.FromSeconds(20);
         private readonly TimeSpan timeout;
@@ -34,37 +33,27 @@ namespace EasyNetQ.Management.Client
             Settings = new JsonSerializerSettings
             {
                 ContractResolver = new RabbitContractResolver(),
-                NullValueHandling = NullValueHandling.Ignore,
+                NullValueHandling = NullValueHandling.Ignore
             };
 
             Settings.Converters.Add(new PropertyConverter());
             Settings.Converters.Add(new MessageStatsOrEmptyArrayConverter());
             Settings.Converters.Add(new QueueTotalsOrEmptyArrayConverter());
-            Settings.Converters.Add(new StringEnumConverter { CamelCaseText = true});
+            Settings.Converters.Add(new StringEnumConverter {CamelCaseText = true});
             Settings.Converters.Add(new HaParamsConverter());
         }
 
-        public string HostUrl
-        {
-            get { return hostUrl; }
-        }
+        public string HostUrl { get; }
 
-        public string Username
-        {
-            get { return username; }
-        }
+        public string Username { get; }
 
-        public int PortNumber
-        {
-            get { return portNumber; }
-        }
+        public int PortNumber { get; }
 
         public ManagementClient(
             string hostUrl,
             string username,
             string password,
             int portNumber = 15672,
-            bool runningOnMono = false,
             TimeSpan? timeout = null,
             Action<HttpRequestMessage> configureRequest = null,
             bool ssl = false)
@@ -107,346 +96,280 @@ namespace EasyNetQ.Management.Client
             {
                 configureRequest = x => { };
             }
-            this.hostUrl = hostUrl;
-            this.username = username;
+            HostUrl = hostUrl;
+            Username = username;
             this.password = password;
-            this.portNumber = portNumber;
+            PortNumber = portNumber;
             this.timeout = timeout ?? defaultTimeout;
-            this.runningOnMono = runningOnMono;
             this.configureRequest = configureRequest;
 
-            var messageHandler = new HttpClientHandler {
-                Credentials = new NetworkCredential(username, password),
+            var messageHandler = new HttpClientHandler
+            {
+                Credentials = new NetworkCredential(username, password)
             };
 
-            this.httpClient = new HttpClient(messageHandler) { Timeout = this.timeout };
+            httpClient = new HttpClient(messageHandler) {Timeout = this.timeout};
 
             //default WebRequest.KeepAlive to false to resolve spurious 'the request was aborted: the request was canceled' exceptions
             httpClient.DefaultRequestHeaders.Add("Connection", "close");
         }
 
-        public Overview GetOverview(GetLengthsCriteria lengthsCriteria = null, GetRatesCriteria ratesCriteria = null)
+        public Task<Overview> GetOverviewAsync(GetLengthsCriteria lengthsCriteria = null,
+            GetRatesCriteria ratesCriteria = null)
         {
-            return Get<Overview>("overview", lengthsCriteria, ratesCriteria);
+            return GetAsync<Overview>("overview", lengthsCriteria, ratesCriteria);
         }
 
-        public IEnumerable<Node> GetNodes()
+        public Task<IEnumerable<Node>> GetNodesAsync()
         {
-            return Get<IEnumerable<Node>>("nodes");
+            return GetAsync<IEnumerable<Node>>("nodes");
         }
 
-        public Definitions GetDefinitions()
+        public Task<Definitions> GetDefinitionsAsync()
         {
-            return Get<Definitions>("definitions");
+            return GetAsync<Definitions>("definitions");
         }
 
-        public IEnumerable<Connection> GetConnections()
+        public Task<IEnumerable<Connection>> GetConnectionsAsync()
         {
-            return Get<IEnumerable<Connection>>("connections");
+            return GetAsync<IEnumerable<Connection>>("connections");
         }
 
-        public void CloseConnection(Connection connection)
+        public async Task CloseConnectionAsync(Connection connection)
         {
-            if (connection == null)
-            {
-                throw new ArgumentNullException("connection");
-            }
-
-            Delete(string.Format("connections/{0}", connection.Name));
+            Ensure.ArgumentNotNull(connection, nameof(connection));
+            await DeleteAsync(string.Format("connections/{0}", connection.Name)).ConfigureAwait(false);
         }
 
-        public IEnumerable<Channel> GetChannels()
+        public Task<IEnumerable<Channel>> GetChannelsAsync()
         {
-            return Get<IEnumerable<Channel>>("channels");
+            return GetAsync<IEnumerable<Channel>>("channels");
         }
 
-        public Channel GetChannel (string channelName, GetRatesCriteria ratesCriteria = null)
+        public Task<Channel> GetChannelAsync(string channelName, GetRatesCriteria ratesCriteria = null)
         {
-            return Get<Channel> (string.Format("channels/{0}", channelName), ratesCriteria);
+            return GetAsync<Channel>(string.Format("channels/{0}", channelName), ratesCriteria);
         }
 
-        public IEnumerable<Exchange> GetExchanges()
+        public Task<IEnumerable<Exchange>> GetExchangesAsync()
         {
-            return Get<IEnumerable<Exchange>>("exchanges");
+            return GetAsync<IEnumerable<Exchange>>("exchanges");
         }
 
-        public Exchange GetExchange(string exchangeName, Vhost vhost, GetRatesCriteria ratesCriteria = null)
+        public Task<Exchange> GetExchangeAsync(string exchangeName, Vhost vhost, GetRatesCriteria ratesCriteria = null)
         {
-            return Get<Exchange>(string.Format("exchanges/{0}/{1}",
+            return GetAsync<Exchange>(string.Format("exchanges/{0}/{1}",
                 SanitiseVhostName(vhost.Name), exchangeName), ratesCriteria);
         }
 
-        public Queue GetQueue(string queueName, Vhost vhost, GetLengthsCriteria lengthsCriteria = null, GetRatesCriteria ratesCriteria = null)
+        public Task<Queue> GetQueueAsync(string queueName, Vhost vhost, GetLengthsCriteria lengthsCriteria = null,
+            GetRatesCriteria ratesCriteria = null)
         {
-            return Get<Queue>(string.Format("queues/{0}/{1}",
+            return GetAsync<Queue>(string.Format("queues/{0}/{1}",
                 SanitiseVhostName(vhost.Name), SanitiseName(queueName)), lengthsCriteria, ratesCriteria);
         }
 
-        public Exchange CreateExchange(ExchangeInfo exchangeInfo, Vhost vhost)
+        public async Task<Exchange> CreateExchangeAsync(ExchangeInfo exchangeInfo, Vhost vhost)
         {
             if (exchangeInfo == null)
             {
-                throw new ArgumentNullException("exchangeInfo");
+                throw new ArgumentNullException(nameof(exchangeInfo));
             }
             if (vhost == null)
             {
-                throw new ArgumentNullException("vhost");
+                throw new ArgumentNullException(nameof(vhost));
             }
 
-            Put(string.Format("exchanges/{0}/{1}", SanitiseVhostName(vhost.Name), SanitiseName(exchangeInfo.GetName())), exchangeInfo);
+            await PutAsync(
+                string.Format("exchanges/{0}/{1}", SanitiseVhostName(vhost.Name), SanitiseName(exchangeInfo.GetName())),
+                exchangeInfo).ConfigureAwait(false);
 
-            return GetExchange(SanitiseName(exchangeInfo.GetName()), vhost);
+            return await GetExchangeAsync(SanitiseName(exchangeInfo.GetName()), vhost).ConfigureAwait(false);
         }
 
-        public void DeleteExchange(Exchange exchange)
+        public async Task DeleteExchangeAsync(Exchange exchange)
         {
-            if (exchange == null)
-            {
-                throw new ArgumentNullException("exchange");
-            }
+            Ensure.ArgumentNotNull(exchange, nameof(exchange));
 
-            Delete(string.Format("exchanges/{0}/{1}", SanitiseVhostName(exchange.Vhost), SanitiseName(exchange.Name)));
+            await DeleteAsync(string.Format("exchanges/{0}/{1}", SanitiseVhostName(exchange.Vhost), SanitiseName(exchange.Name))).ConfigureAwait(false);
         }
 
-        public IEnumerable<Binding> GetBindingsWithSource(Exchange exchange)
+        public Task<IEnumerable<Binding>> GetBindingsWithSourceAsync(Exchange exchange)
         {
-            if (exchange == null)
-            {
-                throw new ArgumentNullException("exchange");
-            }
+            Ensure.ArgumentNotNull(exchange, nameof(exchange));
 
-            return Get<IEnumerable<Binding>>(string.Format("exchanges/{0}/{1}/bindings/source", SanitiseVhostName(exchange.Vhost), exchange.Name));
+            return GetAsync<IEnumerable<Binding>>(string.Format("exchanges/{0}/{1}/bindings/source",
+                SanitiseVhostName(exchange.Vhost), exchange.Name));
         }
 
-        public IEnumerable<Binding> GetBindingsWithDestination(Exchange exchange)
+        public Task<IEnumerable<Binding>> GetBindingsWithDestinationAsync(Exchange exchange)
         {
-            if (exchange == null)
-            {
-                throw new ArgumentNullException("exchange");
-            }
+            Ensure.ArgumentNotNull(exchange, nameof(exchange));
 
-            return Get<IEnumerable<Binding>>(string.Format("exchanges/{0}/{1}/bindings/destination", SanitiseVhostName(exchange.Vhost), exchange.Name));
+            return GetAsync<IEnumerable<Binding>>(string.Format("exchanges/{0}/{1}/bindings/destination",
+                SanitiseVhostName(exchange.Vhost), exchange.Name));
         }
 
-        public PublishResult Publish(Exchange exchange, PublishInfo publishInfo)
+        public Task<PublishResult> PublishAsync(Exchange exchange, PublishInfo publishInfo)
         {
-            if (exchange == null)
-            {
-                throw new ArgumentNullException("exchange");
-            }
-            if (publishInfo == null)
-            {
-                throw new ArgumentNullException("publishInfo");
-            }
+            Ensure.ArgumentNotNull(exchange, nameof(exchange));
+            Ensure.ArgumentNotNull(publishInfo, nameof(publishInfo));
 
-            return Post<PublishInfo, PublishResult>(
-                string.Format("exchanges/{0}/{1}/publish", SanitiseVhostName(exchange.Vhost), exchange.Name),
+            return PostAsync<PublishInfo, PublishResult>(
+                $"exchanges/{SanitiseVhostName(exchange.Vhost)}/{exchange.Name}/publish",
                 publishInfo);
         }
 
-        public IEnumerable<Queue> GetQueues()
+        public Task<IEnumerable<Queue>> GetQueuesAsync()
         {
-            return Get<IEnumerable<Queue>>("queues");
+            return GetAsync<IEnumerable<Queue>>("queues");
         }
 
-        public Queue CreateQueue(QueueInfo queueInfo, Vhost vhost)
+        public async Task<Queue> CreateQueueAsync(QueueInfo queueInfo, Vhost vhost)
         {
-            if (queueInfo == null)
-            {
-                throw new ArgumentNullException("queueInfo");
-            }
-            if (vhost == null)
-            {
-                throw new ArgumentNullException("vhost");
-            }
+            Ensure.ArgumentNotNull(queueInfo, nameof(queueInfo));
+            Ensure.ArgumentNotNull(vhost, nameof(vhost));
 
-            Put(string.Format("queues/{0}/{1}", SanitiseVhostName(vhost.Name), SanitiseName(queueInfo.GetName())), queueInfo);
+            await PutAsync(
+                string.Format("queues/{0}/{1}", SanitiseVhostName(vhost.Name), SanitiseName(queueInfo.GetName())),
+                queueInfo).ConfigureAwait(false);
 
-            return GetQueue(queueInfo.GetName(), vhost);
+            return await GetQueueAsync(queueInfo.GetName(), vhost).ConfigureAwait(false);
         }
 
-        public void DeleteQueue(Queue queue)
+        public async Task DeleteQueueAsync(Queue queue)
         {
-            if (queue == null)
-            {
-                throw new ArgumentNullException("queue");
-            }
+            Ensure.ArgumentNotNull(queue, nameof(queue));
 
-            Delete(string.Format("queues/{0}/{1}", SanitiseVhostName(queue.Vhost), SanitiseName(queue.Name)));
+            await DeleteAsync(string.Format("queues/{0}/{1}", SanitiseVhostName(queue.Vhost), SanitiseName(queue.Name))).ConfigureAwait(false);
         }
 
-        public IEnumerable<Binding> GetBindingsForQueue(Queue queue)
+        public Task<IEnumerable<Binding>> GetBindingsForQueueAsync(Queue queue)
         {
-            if (queue == null)
-            {
-                throw new ArgumentNullException("queue");
-            }
+            Ensure.ArgumentNotNull(queue, nameof(queue));
 
-            return Get<IEnumerable<Binding>>(
+            return GetAsync<IEnumerable<Binding>>(
                 string.Format("queues/{0}/{1}/bindings", SanitiseVhostName(queue.Vhost), SanitiseName(queue.Name)));
         }
 
-        public void Purge(Queue queue)
+        public async Task PurgeAsync(Queue queue)
         {
-            if (queue == null)
-            {
-                throw new ArgumentNullException("queue");
-            }
+            Ensure.ArgumentNotNull(queue, nameof(queue));
 
-            Delete(string.Format("queues/{0}/{1}/contents", SanitiseVhostName(queue.Vhost), SanitiseName(queue.Name)));
+            await DeleteAsync(string.Format("queues/{0}/{1}/contents", SanitiseVhostName(queue.Vhost), SanitiseName(queue.Name))).ConfigureAwait(false);
         }
 
-        public IEnumerable<Message> GetMessagesFromQueue(Queue queue, GetMessagesCriteria criteria)
+        public Task<IEnumerable<Message>> GetMessagesFromQueueAsync(Queue queue, GetMessagesCriteria criteria)
         {
-            if (queue == null)
-            {
-                throw new ArgumentNullException("queue");
-            }
+            Ensure.ArgumentNotNull(queue, nameof(queue));
 
-            return Post<GetMessagesCriteria, IEnumerable<Message>>(
-                string.Format("queues/{0}/{1}/get", SanitiseVhostName(queue.Vhost), SanitiseName(queue.Name)),
-                criteria);
+            return PostAsync<GetMessagesCriteria, IEnumerable<Message>>(
+                $"queues/{SanitiseVhostName(queue.Vhost)}/{SanitiseName(queue.Name)}/get", criteria);
         }
 
-        public IEnumerable<Binding> GetBindings()
+        public Task<IEnumerable<Binding>> GetBindingsAsync()
         {
-            return Get<IEnumerable<Binding>>("bindings");
+            return GetAsync<IEnumerable<Binding>>("bindings");
         }
 
-        public void CreateBinding(Exchange exchange, Queue queue, BindingInfo bindingInfo)
+        public async Task CreateBinding(Exchange exchange, Queue queue, BindingInfo bindingInfo)
         {
-            if (exchange == null)
-            {
-                throw new ArgumentNullException("exchange");
-            }
-            if (queue == null)
-            {
-                throw new ArgumentNullException("queue");
-            }
-            if (bindingInfo == null)
-            {
-                throw new ArgumentNullException("bindingInfo");
-            }
+            Ensure.ArgumentNotNull(exchange, nameof(exchange));
+            Ensure.ArgumentNotNull(queue, nameof(queue));
+            Ensure.ArgumentNotNull(bindingInfo, nameof(bindingInfo));
 
-            Post<BindingInfo, object>(
-                string.Format("bindings/{0}/e/{1}/q/{2}", SanitiseVhostName(queue.Vhost), exchange.Name, SanitiseName(queue.Name)),
-                bindingInfo);
+            await PostAsync<BindingInfo, object>(
+                string.Format("bindings/{0}/e/{1}/q/{2}", SanitiseVhostName(queue.Vhost), exchange.Name,
+                    SanitiseName(queue.Name)),
+                bindingInfo).ConfigureAwait(false);
         }
 
-        public void CreateBinding(Exchange sourceExchange, Exchange destinationExchange, BindingInfo bindingInfo)
+        public async Task CreateBinding(Exchange sourceExchange, Exchange destinationExchange, BindingInfo bindingInfo)
         {
-            if (sourceExchange == null)
-            {
-                throw new ArgumentNullException("sourceExchange");
-            }
-            if (destinationExchange == null)
-            {
-                throw new ArgumentNullException("destinationExchange");
-            }
-            if (bindingInfo == null)
-            {
-                throw new ArgumentNullException("bindingInfo");
-            }
+            Ensure.ArgumentNotNull(sourceExchange, nameof(sourceExchange));
+            Ensure.ArgumentNotNull(destinationExchange, nameof(destinationExchange));
+            Ensure.ArgumentNotNull(bindingInfo, nameof(bindingInfo));
 
-            Post<BindingInfo, object>(
-                string.Format("bindings/{0}/e/{1}/e/{2}", SanitiseVhostName(sourceExchange.Vhost), sourceExchange.Name, destinationExchange.Name),
-                bindingInfo);
+            await PostAsync<BindingInfo, object>(
+                $"bindings/{SanitiseVhostName(sourceExchange.Vhost)}/e/{sourceExchange.Name}/e/{destinationExchange.Name}",
+                bindingInfo).ConfigureAwait(false);
         }
 
-        public IEnumerable<Binding> GetBindings(Exchange exchange, Queue queue)
+        public Task<IEnumerable<Binding>> GetBindingsAsync(Exchange exchange, Queue queue)
         {
-            if (exchange == null)
-            {
-                throw new ArgumentNullException("exchange");
-            }
-            if (queue == null)
-            {
-                throw new ArgumentNullException("queue");
-            }
+            Ensure.ArgumentNotNull(exchange, nameof(exchange));
+            Ensure.ArgumentNotNull(queue, nameof(queue));
 
-            return Get<IEnumerable<Binding>>(
+            return GetAsync<IEnumerable<Binding>>(
                 string.Format("bindings/{0}/e/{1}/q/{2}", SanitiseVhostName(queue.Vhost),
                     exchange.Name, SanitiseName(queue.Name)));
         }
-        public IEnumerable<Binding> GetBindings(Exchange fromExchange, Exchange toExchange)
-        {
-            if (fromExchange == null)
-            {
-                throw new ArgumentNullException("fromExchange");
-            }
-            if (toExchange == null)
-            {
-                throw new ArgumentNullException("toExchange");
-            }
 
-            return Get<IEnumerable<Binding>>(
+        public Task<IEnumerable<Binding>> GetBindingsAsync(Exchange fromExchange, Exchange toExchange)
+        {
+            Ensure.ArgumentNotNull(fromExchange, nameof(fromExchange));
+            Ensure.ArgumentNotNull(toExchange, nameof(toExchange));
+
+            return GetAsync<IEnumerable<Binding>>(
                 string.Format("bindings/{0}/e/{1}/e/{2}", SanitiseVhostName(toExchange.Vhost),
                     fromExchange.Name, SanitiseName(toExchange.Name)));
         }
 
-        public void DeleteBinding(Binding binding)
+        public async Task DeleteBindingAsync(Binding binding)
         {
-            if (binding == null)
-            {
-                throw new ArgumentNullException("binding");
-            }
+            Ensure.ArgumentNotNull(binding, nameof(binding));
 
-            Delete(string.Format("bindings/{0}/e/{1}/q/{2}/{3}",
-                SanitiseVhostName(binding.Vhost),
-                binding.Source,
-                binding.Destination,
-                RecodeBindingPropertiesKey(binding.PropertiesKey)));
+            await DeleteAsync(
+                $"bindings/{SanitiseVhostName(binding.Vhost)}/e/{binding.Source}/q/{binding.Destination}/{RecodeBindingPropertiesKey(binding.PropertiesKey)}").ConfigureAwait(false);
         }
 
-        public IEnumerable<Vhost> GetVHosts()
+        public Task<IEnumerable<Vhost>> GetVHostsAsync()
         {
-            return Get<IEnumerable<Vhost>>("vhosts");
+            return GetAsync<IEnumerable<Vhost>>("vhosts");
         }
 
-        public Vhost GetVhost(string vhostName)
+        public Task<Vhost> GetVhostAsync(string vhostName)
         {
-            return Get<Vhost>(string.Format("vhosts/{0}", SanitiseVhostName(vhostName)));
+            return GetAsync<Vhost>(string.Format("vhosts/{0}", SanitiseVhostName(vhostName)));
         }
 
-        public Vhost CreateVirtualHost(string virtualHostName)
+        public async Task<Vhost> CreateVirtualHostAsync(string virtualHostName)
         {
             if (string.IsNullOrEmpty(virtualHostName))
             {
                 throw new ArgumentException("virtualHostName is null or empty");
             }
 
-            Put(string.Format("vhosts/{0}", virtualHostName));
+            await PutAsync<String>($"vhosts/{virtualHostName}").ConfigureAwait(false);
 
-            return GetVhost(virtualHostName);
+            return await GetVhostAsync(virtualHostName).ConfigureAwait(false);
         }
 
-        public void DeleteVirtualHost(Vhost vhost)
+        public async Task DeleteVirtualHostAsync(Vhost vhost)
         {
-            if (vhost == null)
-            {
-                throw new ArgumentNullException("vhost");
-            }
+            Ensure.ArgumentNotNull(vhost, nameof(vhost));
 
-            Delete(string.Format("vhosts/{0}", vhost.Name));
+            await DeleteAsync(string.Format("vhosts/{0}", vhost.Name)).ConfigureAwait(false);
         }
 
-        public IEnumerable<User> GetUsers()
+        public Task<IEnumerable<User>> GetUsersAsync()
         {
-            return Get<IEnumerable<User>>("users");
+            return GetAsync<IEnumerable<User>>("users");
         }
 
-        public User GetUser(string userName)
+        public Task<User> GetUserAsync(string userName)
         {
-            return Get<User>(string.Format("users/{0}", userName));
+            return GetAsync<User>(string.Format("users/{0}", userName));
         }
 
-        public IEnumerable<Policy> GetPolicies()
+        public Task<IEnumerable<Policy>> GetPoliciesAsync()
         {
-            return Get<IEnumerable<Policy>>("policies");
+            return GetAsync<IEnumerable<Policy>>("policies");
         }
 
-        public void CreatePolicy(Policy policy)
+        public async Task CreatePolicy(Policy policy)
         {
+            Ensure.ArgumentNotNull(policy, nameof(policy));
             if (string.IsNullOrEmpty(policy.Name))
             {
                 throw new ArgumentException("Policy name is empty");
@@ -460,212 +383,182 @@ namespace EasyNetQ.Management.Client
                 throw new ArgumentException("Definition should not be null");
             }
 
-            Put(GetPolicyUrl(policy.Name, policy.Vhost), policy);
+            await PutAsync(GetPolicyUrl(policy.Name, policy.Vhost), policy).ConfigureAwait(false);
         }
 
-        private string GetPolicyUrl(string policyName, string vhost)
+        public async Task DeletePolicyAsync(string policyName, Vhost vhost)
         {
-            return string.Format("policies/{0}/{1}", SanitiseVhostName(vhost), policyName);
+            await DeleteAsync(GetPolicyUrl(policyName, vhost.Name)).ConfigureAwait(false);
         }
 
-        public void DeletePolicy(string policyName, Vhost vhost)
+        public Task<IEnumerable<Parameter>> GetParametersAsync()
         {
-            Delete(GetPolicyUrl(policyName, vhost.Name));
+            return GetAsync<IEnumerable<Parameter>>("parameters");
         }
 
-        public IEnumerable<Parameter> GetParameters()
-        {
-            return Get<IEnumerable<Parameter>>("parameters");
-        }
-
-        public void CreateParameter(Parameter parameter)
+        public async Task CreateParameterAsync(Parameter parameter)
         {
             var componentName = parameter.Component;
             var vhostName = parameter.Vhost;
             var parameterName = parameter.Name;
-            Put(GetParameterUrl(componentName, vhostName, parameterName), parameter.Value);
+            await PutAsync(GetParameterUrl(componentName, vhostName, parameterName), parameter.Value).ConfigureAwait(false);
         }
 
-        private string GetParameterUrl(string componentName, string vhost, string parameterName)
+        public async Task DeleteParameterAsync(string componentName, string vhost, string name)
         {
-            return string.Format("parameters/{0}/{1}/{2}", componentName, SanitiseVhostName(vhost), parameterName);
+            await DeleteAsync(GetParameterUrl(componentName, vhost, name)).ConfigureAwait(false);
         }
 
-        public void DeleteParameter(string componentName, string vhost, string name)
+        public async Task<User> CreateUserAsync(UserInfo userInfo)
         {
-            Delete(GetParameterUrl(componentName, vhost, name));
+            Ensure.ArgumentNotNull(userInfo, nameof(userInfo));
+
+            await PutAsync(string.Format("users/{0}", userInfo.GetName()), userInfo).ConfigureAwait(false);
+
+            return await GetUserAsync(userInfo.GetName()).ConfigureAwait(false);
         }
 
-        public User CreateUser(UserInfo userInfo)
+        public async Task DeleteUserAsync(User user)
         {
-            if (userInfo == null)
-            {
-                throw new ArgumentNullException("userInfo");
-            }
+            Ensure.ArgumentNotNull(user, nameof(user));
 
-            Put(string.Format("users/{0}", userInfo.GetName()), userInfo);
-
-            return GetUser(userInfo.GetName());
+            await DeleteAsync(string.Format("users/{0}", user.Name)).ConfigureAwait(false);
         }
 
-        public void DeleteUser(User user)
+        public Task<IEnumerable<Permission>> GetPermissionsAsync()
         {
-            if (user == null)
-            {
-                throw new ArgumentNullException("user");
-            }
-
-            Delete(string.Format("users/{0}", user.Name));
+            return GetAsync<IEnumerable<Permission>>("permissions");
         }
 
-        public IEnumerable<Permission> GetPermissions()
+        public async Task CreatePermissionAsync(PermissionInfo permissionInfo)
         {
-            return Get<IEnumerable<Permission>>("permissions");
-        }
+            Ensure.ArgumentNotNull(permissionInfo, nameof(permissionInfo));
 
-        public void CreatePermission(PermissionInfo permissionInfo)
-        {
-            if (permissionInfo == null)
-            {
-                throw new ArgumentNullException("permissionInfo");
-            }
-
-            Put(string.Format("permissions/{0}/{1}",
-                   SanitiseVhostName(permissionInfo.GetVirtualHostName()),
+            await PutAsync(string.Format("permissions/{0}/{1}",
+                    SanitiseVhostName(permissionInfo.GetVirtualHostName()),
                     permissionInfo.GetUserName()),
-                permissionInfo);
+                permissionInfo).ConfigureAwait(false);
         }
 
-        public void DeletePermission(Permission permission)
+        public async Task DeletePermissionAsync(Permission permission)
         {
-            if (permission == null)
-            {
-                throw new ArgumentNullException("permission");
-            }
+            Ensure.ArgumentNotNull(permission, nameof(permission));
 
-            Delete(string.Format("permissions/{0}/{1}",
+            await DeleteAsync(string.Format("permissions/{0}/{1}",
                 permission.Vhost,
-                permission.User));
+                permission.User)).ConfigureAwait(false);
         }
 
-        public User ChangeUserPassword(string userName, string newPassword)
+        public async Task<User> ChangeUserPasswordAsync(string userName, string newPassword)
         {
-            var user = GetUser(userName);
+            var user = await GetUserAsync(userName).ConfigureAwait(false);
+
             var tags = user.Tags.Split(',');
             var userInfo = new UserInfo(userName, newPassword);
             foreach (var tag in tags)
             {
                 userInfo.AddTag(tag.Trim());
             }
-            return CreateUser(userInfo);
+            return await CreateUserAsync(userInfo).ConfigureAwait(false);
         }
 
-        public bool IsAlive(Vhost vhost)
+        public async Task<bool> IsAliveAsync(Vhost vhost)
         {
-            if (vhost == null)
-            {
-                throw new ArgumentNullException("vhost");
-            }
+            Ensure.ArgumentNotNull(vhost, nameof(vhost));
 
-            var result = Get<AlivenessTestResult>(string.Format("aliveness-test/{0}",
-                SanitiseVhostName(vhost.Name)));
+            var result = await GetAsync<AlivenessTestResult>(string.Format("aliveness-test/{0}",
+                SanitiseVhostName(vhost.Name))).ConfigureAwait(false);
 
             return result.Status == "ok";
         }
 
-        private T Get<T>(string path, params object[] queryObjects)
+        private Task<T> GetAsync<T>(string path, params object[] queryObjects)
         {
             var request = CreateRequestForPath(path, HttpMethod.Get, queryObjects);
 
-            using (var response = httpClient.GetHttpResponse(request))
-            {
-                if (response.StatusCode != HttpStatusCode.OK)
+            return httpClient.SendAsync(request)
+                .ContinueWith(_ =>
                 {
-                    throw new UnexpectedHttpStatusCodeException(response.StatusCode);
-                }
-                return DeserializeResponse<T>(response);
-            }
+                    if (_.Exception != null)
+                        throw(_.Exception.GetBaseException());
+
+                    var response = _.Result;
+                    if (response.StatusCode != HttpStatusCode.OK)
+                    {
+                        throw new UnexpectedHttpStatusCodeException(response.StatusCode);
+                    }
+                    return DeserializeResponseAsync<T>(response);
+                }).Unwrap();
         }
 
-        private TResult Post<TItem, TResult>(string path, TItem item)
+        private Task<TResult> PostAsync<TItem, TResult>(string path, TItem item)
         {
             var request = CreateRequestForPath(path, HttpMethod.Post);
 
             InsertRequestBody(request, item);
 
-            using(var response = httpClient.GetHttpResponse(request))
-            {
-                if (!(response.StatusCode == HttpStatusCode.OK || response.StatusCode == HttpStatusCode.Created))
+            return httpClient.SendAsync(request)
+                .ContinueWith(_ =>
                 {
-                    throw new UnexpectedHttpStatusCodeException(response.StatusCode);
-                }
+                    if (_.Exception != null)
+                        throw _.Exception.GetBaseException();
 
-                return DeserializeResponse<TResult>(response);
-            }
+                    var response = _.Result;
+                    if (!(response.StatusCode == HttpStatusCode.OK || response.StatusCode == HttpStatusCode.Created))
+                        throw new UnexpectedHttpStatusCodeException(response.StatusCode);
+
+                    var responseAsync = DeserializeResponseAsync<TResult>(response);
+                    response.Dispose();
+                    return responseAsync;
+                }).Unwrap();
         }
 
-        private void Delete(string path)
+        private async Task DeleteAsync(string path)
         {
             var request = CreateRequestForPath(path, HttpMethod.Delete);
 
-            using (var response = httpClient.GetHttpResponse(request))
-            {
-                if (response.StatusCode != HttpStatusCode.NoContent)
+            await httpClient.SendAsync(request)
+                .ContinueWith(_ =>
                 {
-                    throw new UnexpectedHttpStatusCodeException(response.StatusCode);
-                }   
-            }
+                    if (_.Exception != null)
+                        throw _.Exception.GetBaseException();
+
+                    var response = _.Result;
+                    if (response.StatusCode != HttpStatusCode.NoContent)
+                        throw new UnexpectedHttpStatusCodeException(response.StatusCode);
+                    return Task.CompletedTask;
+                }).ConfigureAwait(false);
         }
 
-        private void Put(string path)
+        private Task PutAsync<T>(string path, T item = default(T)) where T : class
         {
             var request = CreateRequestForPath(path, HttpMethod.Put);
+            if (item != default(T))
+                InsertRequestBody(request, item);
 
-            using (var response = httpClient.GetHttpResponse(request))
-            {
-                // The "Cowboy" server in 3.7.0's Management Client returns 201 Created. 
-                // "MochiWeb/1.1 WebMachine/1.10.0 (never breaks eye contact)" in 3.6.1 and previous return 204 No Content
-                // Also acceptable for a PUT response is 200 OK
-                // See also http://stackoverflow.com/questions/797834/should-a-restful-put-operation-return-something
-                if (!(response.StatusCode == HttpStatusCode.OK || 
-                      response.StatusCode == HttpStatusCode.Created || 
-                      response.StatusCode == HttpStatusCode.NoContent))
+            return httpClient.SendAsync(request)
+                .ContinueWith(_ =>
                 {
-                    throw new UnexpectedHttpStatusCodeException(response.StatusCode);
-                }
-            }
+                    if (_.Exception != null)
+                        throw _.Exception.GetBaseException();
+
+                    var response = _.Result;
+                    if (!(response.StatusCode == HttpStatusCode.OK ||
+                          response.StatusCode == HttpStatusCode.Created ||
+                          response.StatusCode == HttpStatusCode.NoContent))
+                    {
+                        throw new UnexpectedHttpStatusCodeException(response.StatusCode);
+                    }
+                    return Task.CompletedTask;
+
+                }).Unwrap();
+
         }
 
-        private void Put<T>(string path, T item)
-        {
-            var request = CreateRequestForPath(path, HttpMethod.Put);
-
-            InsertRequestBody(request, item);
-
-            using (var response = httpClient.GetHttpResponse(request))
-            {
-                // The "Cowboy" server in 3.7.0's Management Client returns 201 Created. 
-                // "MochiWeb/1.1 WebMachine/1.10.0 (never breaks eye contact)" in 3.6.1 and previous return 204 No Content
-                // Also acceptable for a PUT response is 200 OK
-                // See also http://stackoverflow.com/questions/797834/should-a-restful-put-operation-return-something
-                if (!(response.StatusCode == HttpStatusCode.OK ||
-                      response.StatusCode == HttpStatusCode.Created ||
-                      response.StatusCode == HttpStatusCode.NoContent))
-                {
-                    throw new UnexpectedHttpStatusCodeException(response.StatusCode);
-                }
-            }
-        }
-
-        /// <summary>
-        /// https://blogs.msdn.microsoft.com/pfxteam/2012/04/13/should-i-expose-synchronous-wrappers-for-asynchronous-methods/
-        /// </summary>
-        private void InsertRequestBody<T>(HttpRequestMessage request, T item)
+        private static void InsertRequestBody<T>(HttpRequestMessage request, T item)
         {
             if (!request.Headers.Accept.Contains(JsonMediaTypeHeaderValue))
-            {
                 request.Headers.Accept.Add(JsonMediaTypeHeaderValue);
-            }
 
             var body = JsonConvert.SerializeObject(item, Settings);
             var content = new StringContent(body);
@@ -674,43 +567,39 @@ namespace EasyNetQ.Management.Client
             request.Content = content;
         }
 
-        private T DeserializeResponse<T>(HttpResponseMessage response)
+        private static string GetPolicyUrl(string policyName, string vhost)
         {
-            var responseBody = GetBodyFromResponse(response);
-            return JsonConvert.DeserializeObject<T>(responseBody, Settings);
+            return string.Format("policies/{0}/{1}", SanitiseVhostName(vhost), policyName);
         }
 
-        private static string GetBodyFromResponse(HttpResponseMessage response)
+        private static string GetParameterUrl(string componentName, string vhost, string parameterName)
+        {
+            return string.Format("parameters/{0}/{1}/{2}", componentName, SanitiseVhostName(vhost), parameterName);
+        }
+
+        private static Task<T> DeserializeResponseAsync<T>(HttpResponseMessage response)
+        {
+            return GetBodyFromResponse(response)
+                .ContinueWith(_ => JsonConvert.DeserializeObject<T>(_.Result, Settings));
+        }
+
+        private static Task<string> GetBodyFromResponse([NotNull] HttpResponseMessage response)
         {
             if (response == null)
             {
                 throw new EasyNetQManagementException("Response stream was null");
             }
 
-            return Task.Run(() => response.Content.ReadAsStringAsync()).Result;
+            return response.Content.ReadAsStringAsync();
         }
 
-        private HttpRequestMessage CreateRequestForPath(string path, HttpMethod httpMethod, object[] queryObjects = null)
+        private HttpRequestMessage CreateRequestForPath(string path, HttpMethod httpMethod,
+            object[] queryObjects = null)
         {
-            var endpointAddress = BuildEndpointAddress (path);
+            var endpointAddress = BuildEndpointAddress(path);
             var queryString = BuildQueryString(queryObjects);
 
-            var uri = new Uri (endpointAddress + queryString);
-
-            if (runningOnMono) {
-                // unsightly hack to fix path. 
-                // The default vHost in RabbitMQ is named '/' which causes all sorts of problems :(
-                // We need to escape it to %2f, but System.Uri then unescapes it back to '/'
-                // The horrible fix is to reset the path field to the original path value, after it's
-                // been set.
-                var pathField = typeof(Uri).GetField ("path", BindingFlags.Instance | BindingFlags.NonPublic);
-                var alteredPath = (string)pathField.GetValue (uri);
-                alteredPath = alteredPath.Replace (@"///", @"/%2f/");
-                alteredPath = alteredPath.Replace (@"//", @"/%2f");
-                alteredPath = alteredPath.Replace ("+", "%2b");
-                pathField.SetValue (uri, alteredPath);
-            }
-
+            var uri = new Uri(endpointAddress + queryString);
             var request = new HttpRequestMessage(httpMethod, uri);
 
             configureRequest(request);
@@ -720,7 +609,7 @@ namespace EasyNetQ.Management.Client
 
         private string BuildEndpointAddress(string path)
         {
-            return string.Format("{0}:{1}/api/{2}", hostUrl, portNumber, path);
+            return string.Format("{0}:{1}/api/{2}", HostUrl, PortNumber, path);
         }
 
         // Very simple query-string builder. 
@@ -753,27 +642,24 @@ namespace EasyNetQ.Management.Client
             return queryStringBuilder.ToString();
         }
 
-        private string SanitiseVhostName(string vhostName)
+        private static string SanitiseVhostName(string vhostName)
         {
             return vhostName.Replace("/", "%2f");
         }
 
-        private string SanitiseName(string queueName)
+        private static string SanitiseName(string queueName)
         {
             return queueName.Replace("+", "%2B").Replace("#", "%23").Replace("/", "%2f");
         }
 
-        private string RecodeBindingPropertiesKey(string propertiesKey)
+        private static string RecodeBindingPropertiesKey(string propertiesKey)
         {
             return propertiesKey.Replace("%5F", "%255F");
         }
 
         public void Dispose()
         {
-            if (httpClient != null)
-            {
-                httpClient.Dispose();
-            }
+            httpClient?.Dispose();
         }
     }
 }

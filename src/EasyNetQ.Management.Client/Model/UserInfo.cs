@@ -8,16 +8,10 @@ namespace EasyNetQ.Management.Client.Model
     {
         private readonly string name;
         public string Password { get; private set; }
-        public string Tags
-        {
-            get
-            {
-                return tagList.Any()
-                    ? string.Join(",", tagList)
-                    : string.Empty;
+        public string Tags => tagList.Any()
+            ? string.Join(",", tagList)
+            : string.Empty;
 
-            }
-        }
         private readonly ISet<string> allowedTags = new HashSet<string>
         {
             "administrator", "monitoring", "management", "policymaker"
@@ -37,7 +31,7 @@ namespace EasyNetQ.Management.Client.Model
             }
 
             this.name = name;
-            this.Password = password;
+            Password = password;
         }
 
         /// <summary>

@@ -26,7 +26,7 @@ namespace Amqp.Net.Tests
                 Name = name,
                 Driver = driver,
             };
-            var response = await client.Networks.CreateNetworkAsync(networksCreateParameters, token);
+            var response = await client.Networks.CreateNetworkAsync(networksCreateParameters, token).ConfigureAwait(false);
             return response.ID;
         }
 
@@ -38,7 +38,7 @@ namespace Amqp.Net.Tests
                 Tag = tag
             };
             var progress = new Progress<JSONMessage>(jsonMessage => { });
-            await client.Images.CreateImageAsync(createParameters, null, progress, token);
+            await client.Images.CreateImageAsync(createParameters, null, progress, token).ConfigureAwait(false);
         }
 
         public async Task<string> CreateContainerAsync(string image, string name, IDictionary<string, ISet<string>> portMappings, string networkName = null, IList<string> envVars = null, CancellationToken token = default(CancellationToken))
@@ -55,25 +55,25 @@ namespace Amqp.Net.Tests
                 },
                 ExposedPorts = portMappings.ToDictionary(x => x.Key, x => new EmptyStruct())
             };
-            var response = await client.Containers.CreateContainerAsync(createParameters, token);
+            var response = await client.Containers.CreateContainerAsync(createParameters, token).ConfigureAwait(false);
             return response.ID;
         }
 
         public async Task StartContainerAsync(string id, CancellationToken token = default(CancellationToken))
         {
-            await client.Containers.StartContainerAsync(id, new ContainerStartParameters(), token);
+            await client.Containers.StartContainerAsync(id, new ContainerStartParameters(), token).ConfigureAwait(false);
         }
 
         public async Task StopContainerAsync(string name, CancellationToken token = default(CancellationToken))
         {
-            var ids = await FindContainerIdsAsync(name);
+            var ids = await FindContainerIdsAsync(name).ConfigureAwait(false);
             var stopTasks = ids.Select(x => client.Containers.StopContainerAsync(x, new ContainerStopParameters(), token));
             await (Task.WhenAll(stopTasks));
         }
 
         public async Task RemoveContainerAsync(string name, CancellationToken token = default(CancellationToken))
         {
-            var ids = await FindContainerIdsAsync(name);
+            var ids = await FindContainerIdsAsync(name).ConfigureAwait(false);
             var containerRemoveParameters = new ContainerRemoveParameters { Force = true, RemoveVolumes = true };
             var removeTasks = ids.Select(x => client.Containers.RemoveContainerAsync(x, containerRemoveParameters, token));
             await (Task.WhenAll(removeTasks));
@@ -81,7 +81,7 @@ namespace Amqp.Net.Tests
 
         public async Task DeleteNetworksAsync(string name, CancellationToken token = default(CancellationToken))
         {
-            var ids = await FindNetworkIdsAsync(name);
+            var ids = await FindNetworkIdsAsync(name).ConfigureAwait(false);
             var deleteTasks = ids.Select(x => client.Networks.DeleteNetworkAsync(x, token));
             await (Task.WhenAll(deleteTasks));
         }
@@ -106,13 +106,13 @@ namespace Amqp.Net.Tests
 
         private async Task<IEnumerable<string>> FindContainerIdsAsync(string name)
         {
-            var containers = await client.Containers.ListContainersAsync(new ContainersListParameters { All = true, Filters = ListFilters(name) });
+            var containers = await client.Containers.ListContainersAsync(new ContainersListParameters { All = true, Filters = ListFilters(name) }).ConfigureAwait(false);
             return containers.Select(x => x.ID);
         }
 
         private async Task<IEnumerable<string>> FindNetworkIdsAsync(string name)
         {
-            var networks = await client.Networks.ListNetworksAsync(new NetworksListParameters { Filters = ListFilters(name) });
+            var networks = await client.Networks.ListNetworksAsync(new NetworksListParameters { Filters = ListFilters(name) }).ConfigureAwait(false);
             return networks.Select(x => x.ID);
         }
 

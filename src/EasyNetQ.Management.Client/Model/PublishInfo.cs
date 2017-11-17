@@ -16,19 +16,19 @@ namespace EasyNetQ.Management.Client.Model
         {
             if (properties == null)
             {
-                throw new ArgumentNullException("properties");
+                throw new ArgumentNullException(nameof(properties));
             }
             if (routingKey == null)
             {
-                throw new ArgumentNullException("routingKey");
+                throw new ArgumentNullException(nameof(routingKey));
             }
             if (payload == null)
             {
-                throw new ArgumentNullException("payload");
+                throw new ArgumentNullException(nameof(payload));
             }
             if (payloadEncoding == null)
             {
-                throw new ArgumentNullException("payloadEncoding");
+                throw new ArgumentNullException(nameof(payloadEncoding));
             }
             if (!payloadEncodings.Contains(payloadEncoding))
             {

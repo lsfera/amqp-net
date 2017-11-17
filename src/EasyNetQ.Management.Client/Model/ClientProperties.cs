@@ -11,14 +11,14 @@ namespace EasyNetQ.Management.Client.Model
         {
             public ClientProperties(IDictionary<String,Object> properties) : base (properties) {}
 
-            public Capabilities Capabilities { get { return GetPropertyOrDefault<Capabilities>("Capabilities"); } }
-            public string User { get { return GetPropertyOrDefault<String>("User"); } }
-            public string Application { get { return GetPropertyOrDefault<String>("Application"); } }
-            public string ClientApi { get { return GetPropertyOrDefault<String>("ClientApi"); } }
-            public string ApplicationLocation { get { return GetPropertyOrDefault<String>("ApplicationLocation"); } }
-            public DateTime Connected { get { return GetPropertyOrDefault<DateTime>("Connected"); } }
-            public string EasynetqVersion { get { return GetPropertyOrDefault<String>("EasynetqVersion"); } }
-            public string MachineName { get { return GetPropertyOrDefault<String>("MachineName"); } }            
-            public IDictionary<String, Object> PropertiesDictionary { get { return Properties; } }
+            public Capabilities Capabilities => GetPropertyOrDefault<Capabilities>("Capabilities");
+            public string User => GetPropertyOrDefault<String>("User");
+            public string Application => GetPropertyOrDefault<String>("Application");
+            public string ClientApi => GetPropertyOrDefault<String>("ClientApi");
+            public string ApplicationLocation => GetPropertyOrDefault<String>("ApplicationLocation");
+            public DateTime Connected => GetPropertyOrDefault<DateTime>("Connected");
+            public string EasynetqVersion => GetPropertyOrDefault<String>("EasynetqVersion");
+            public string MachineName => GetPropertyOrDefault<String>("MachineName");
+            public IDictionary<String, Object> PropertiesDictionary => Properties;
         }
 }

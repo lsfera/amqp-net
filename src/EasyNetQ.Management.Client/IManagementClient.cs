@@ -1,7 +1,8 @@
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using EasyNetQ.Management.Client.Model;
-using Queue = EasyNetQ.Management.Client.Model.Queue;
+using JetBrains.Annotations;
 
 namespace EasyNetQ.Management.Client
 {
@@ -28,32 +29,32 @@ namespace EasyNetQ.Management.Client
         /// <param name="lengthsCriteria">Criteria for getting samples of queue length data</param>
         /// <param name="ratesCriteria">Criteria for getting samples of rate data</param>
         /// <returns></returns>
-        Overview GetOverview(GetLengthsCriteria lengthsCriteria = null, GetRatesCriteria ratesCriteria = null);
+        Task<Overview> GetOverviewAsync(GetLengthsCriteria lengthsCriteria = null, GetRatesCriteria ratesCriteria = null);
 
         /// <summary>
         /// A list of nodes in the RabbitMQ cluster.
         /// </summary>
         /// <returns></returns>
-        IEnumerable<Node> GetNodes();
+        Task<IEnumerable<Node>> GetNodesAsync();
 
         /// <summary>
         /// The server definitions - exchanges, queues, bindings, users, virtual hosts, permissions. 
         /// Everything apart from messages.
         /// </summary>
         /// <returns></returns>
-        Definitions GetDefinitions();
+        Task<Definitions> GetDefinitionsAsync();
 
         /// <summary>
         /// A list of all open connections.
         /// </summary>
         /// <returns></returns>
-        IEnumerable<Connection> GetConnections();
+        Task<IEnumerable<Connection>> GetConnectionsAsync();
 
         /// <summary>
         /// A list of all open channels.
         /// </summary>
         /// <returns></returns>
-        IEnumerable<Channel> GetChannels();
+        Task<IEnumerable<Channel>> GetChannelsAsync();
 
         /// <summary>
         /// Gets the channel. This returns more detail, including consumers than the GetChannels method.
@@ -61,76 +62,76 @@ namespace EasyNetQ.Management.Client
         /// <returns>The channel.</returns>
         /// <param name="channelName">Channel name.</param>
         /// <param name="ratesCriteria">Criteria for getting samples of rate data</param>
-        Channel GetChannel (string channelName, GetRatesCriteria ratesCriteria = null);
+        Task<Channel> GetChannelAsync (string channelName, GetRatesCriteria ratesCriteria = null);
 
         /// <summary>
         /// A list of all exchanges.
         /// </summary>
         /// <returns></returns>
-        IEnumerable<Exchange> GetExchanges();
+        Task<IEnumerable<Exchange>> GetExchangesAsync();
 
         /// <summary>
         /// A list of all queues.
         /// </summary>
         /// <returns></returns>
-        IEnumerable<Queue> GetQueues();
+        Task<IEnumerable<Queue>> GetQueuesAsync();
 
         /// <summary>
         /// A list of all bindings.
         /// </summary>
         /// <returns></returns>
-        IEnumerable<Binding> GetBindings();
+        Task<IEnumerable<Binding>> GetBindingsAsync();
 
         /// <summary>
         /// A list of all vhosts.
         /// </summary>
         /// <returns></returns>
-        IEnumerable<Vhost> GetVHosts();
+        Task<IEnumerable<Vhost>> GetVHostsAsync();
 
         /// <summary>
         /// A list of all users.
         /// </summary>
         /// <returns></returns>
-        IEnumerable<User> GetUsers();
+        Task<IEnumerable<User>> GetUsersAsync();
 
         /// <summary>
         /// A list of all permissions for all users.
         /// </summary>
         /// <returns></returns>
-        IEnumerable<Permission> GetPermissions();
+        Task<IEnumerable<Permission>> GetPermissionsAsync();
 
         /// <summary>
         /// Closes the given connection
         /// </summary>
         /// <param name="connection"></param>
-        void CloseConnection(Connection connection);
+        Task CloseConnectionAsync([NotNull] Connection connection);
 
         /// <summary>
         /// Creates the given exchange
         /// </summary>
         /// <param name="exchangeInfo"></param>
         /// <param name="vhost"></param>
-        Exchange CreateExchange(ExchangeInfo exchangeInfo, Vhost vhost);
+        Task<Exchange> CreateExchangeAsync([NotNull] ExchangeInfo exchangeInfo, [NotNull] Vhost vhost);
 
         /// <summary>
         /// Delete the given exchange
         /// </summary>
         /// <param name="exchange"></param>
-        void DeleteExchange(Exchange exchange);
+        Task DeleteExchangeAsync([NotNull] Exchange exchange);
 
         /// <summary>
         /// A list of all bindings in which a given exchange is the source.
         /// </summary>
         /// <param name="exchange"></param>
         /// <returns></returns>
-        IEnumerable<Binding> GetBindingsWithSource(Exchange exchange);
+        Task<IEnumerable<Binding>> GetBindingsWithSourceAsync([NotNull] Exchange exchange);
 
         /// <summary>
         /// A list of all bindings in which a given exchange is the destination.
         /// </summary>
         /// <param name="exchange"></param>
         /// <returns></returns>
-        IEnumerable<Binding> GetBindingsWithDestination(Exchange exchange);
+        Task<IEnumerable<Binding>> GetBindingsWithDestinationAsync([NotNull] Exchange exchange);
 
         /// <summary>
         /// Publish a message to a given exchange.
@@ -142,32 +143,32 @@ namespace EasyNetQ.Management.Client
         /// <param name="exchange">The exchange</param>
         /// <param name="publishInfo">The publication parameters</param>
         /// <returns>A PublishResult, routed == true if the message was sent to at least one queue</returns>
-        PublishResult Publish(Exchange exchange, PublishInfo publishInfo);
+        Task<PublishResult> PublishAsync([NotNull] Exchange exchange, [NotNull] PublishInfo publishInfo);
 
         /// <summary>
         /// Create the given queue
         /// </summary>
         /// <param name="queueInfo"></param>
         /// <param name="vhost"></param>
-        Queue CreateQueue(QueueInfo queueInfo, Vhost vhost);
+        Task<Queue> CreateQueueAsync([NotNull] QueueInfo queueInfo, [NotNull] Vhost vhost);
 
         /// <summary>
         /// Delete the given queue
         /// </summary>
         /// <param name="queue"></param>
-        void DeleteQueue(Queue queue);
+        Task DeleteQueueAsync([NotNull] Queue queue);
 
         /// <summary>
         /// A list of all bindings on a given queue.
         /// </summary>
         /// <param name="queue"></param>
-        IEnumerable<Binding> GetBindingsForQueue(Queue queue);
+        Task<IEnumerable<Binding>> GetBindingsForQueueAsync([NotNull] Queue queue);
 
         /// <summary>
         /// Purge a queue of all messages
         /// </summary>
         /// <param name="queue"></param>
-        void Purge(Queue queue);
+        Task PurgeAsync([NotNull] Queue queue);
 
         /// <summary>
         /// Get messages from a queue.
@@ -180,7 +181,7 @@ namespace EasyNetQ.Management.Client
         /// <param name="queue">The queue to retrieve from</param>
         /// <param name="criteria">The criteria for the retrieve</param>
         /// <returns>Messages</returns>
-        IEnumerable<Message> GetMessagesFromQueue(Queue queue, GetMessagesCriteria criteria);
+        Task<IEnumerable<Message>> GetMessagesFromQueueAsync([NotNull] Queue queue, GetMessagesCriteria criteria);
 
         /// <summary>
         /// Create a binding between an exchange and a queue
@@ -189,7 +190,7 @@ namespace EasyNetQ.Management.Client
         /// <param name="queue">the queue</param>
         /// <param name="bindingInfo">properties of the binding</param>
         /// <returns>The binding that was created</returns>
-        void CreateBinding(Exchange exchange, Queue queue, BindingInfo bindingInfo);
+        Task CreateBinding([NotNull] Exchange exchange, [NotNull] Queue queue, [NotNull] BindingInfo bindingInfo);
 
         /// <summary>
         /// Create a binding between an exchange and an exchange
@@ -197,7 +198,7 @@ namespace EasyNetQ.Management.Client
         /// <param name="sourceExchange">the source exchange</param>
         /// <param name="destinationExchange">the destination exchange</param>
         /// <param name="bindingInfo">properties of the binding</param>
-        void CreateBinding(Exchange sourceExchange, Exchange destinationExchange, BindingInfo bindingInfo);
+        Task CreateBinding([NotNull] Exchange sourceExchange, [NotNull] Exchange destinationExchange, [NotNull] BindingInfo bindingInfo);
 
         /// <summary>
         /// A list of all bindings between an exchange and a queue. 
@@ -206,7 +207,7 @@ namespace EasyNetQ.Management.Client
         /// <param name="exchange"></param>
         /// <param name="queue"></param>
         /// <returns></returns>
-        IEnumerable<Binding> GetBindings(Exchange exchange, Queue queue);
+        Task<IEnumerable<Binding>> GetBindingsAsync([NotNull] Exchange exchange, [NotNull] Queue queue);
 
         /// <summary>
         /// A list of all bindings between an exchange and an exchange. 
@@ -214,56 +215,56 @@ namespace EasyNetQ.Management.Client
         /// <param name="fromExchange"></param>
         /// <param name="toExchange"></param>
         /// <returns></returns>
-        IEnumerable<Binding> GetBindings(Exchange fromExchange, Exchange toExchange);
+        Task<IEnumerable<Binding>> GetBindingsAsync([NotNull] Exchange fromExchange, [NotNull] Exchange toExchange);
 
         /// <summary>
         /// Delete the given binding
         /// </summary>
         /// <param name="binding"></param>
-        void DeleteBinding(Binding binding);
+        Task DeleteBindingAsync([NotNull] Binding binding);
 
         /// <summary>
         /// Create a new virtual host
         /// </summary>
         /// <param name="virtualHostName">The name of the new virtual host</param>
-        Vhost CreateVirtualHost(string virtualHostName);
+        Task<Vhost> CreateVirtualHostAsync(string virtualHostName);
 
         /// <summary>
         /// Delete a virtual host
         /// </summary>
         /// <param name="vhost">The virtual host to delete</param>
-        void DeleteVirtualHost(Vhost vhost);
+        Task DeleteVirtualHostAsync([NotNull] Vhost vhost);
 
         /// <summary>
         /// Create a new user
         /// </summary>
         /// <param name="userInfo">The user to create</param>
-        User CreateUser(UserInfo userInfo);
+        Task<User> CreateUserAsync([NotNull] UserInfo userInfo);
 
         /// <summary>
         /// Delete a user
         /// </summary>
         /// <param name="user">The user to delete</param>
-        void DeleteUser(User user);
+        Task DeleteUserAsync([NotNull] User user);
 
         /// <summary>
         /// Create a permission
         /// </summary>
         /// <param name="permissionInfo">The permission to create</param>
-        void CreatePermission(PermissionInfo permissionInfo);
+        Task CreatePermissionAsync([NotNull] PermissionInfo permissionInfo);
 
         /// <summary>
         /// Delete a permission
         /// </summary>
         /// <param name="permission">The permission to delete</param>
-        void DeletePermission(Permission permission);
+        Task DeletePermissionAsync([NotNull] Permission permission);
 
         /// <summary>
         /// Update the password of an user.
         /// </summary>
         /// <param name="userName">The name of a user</param>
         /// <param name="newPassword">The new password to set</param>
-        User ChangeUserPassword(string userName, string newPassword);
+        Task<User> ChangeUserPasswordAsync(string userName, string newPassword);
 
         /// <summary>
         /// Declares a test queue, then publishes and consumes a message. Intended for use 
@@ -271,7 +272,7 @@ namespace EasyNetQ.Management.Client
         /// Note: the test queue will not be deleted (to to prevent queue churn if this 
         /// is repeatedly pinged).
         /// </summary>
-        bool IsAlive(Vhost vhost);
+        Task<bool> IsAliveAsync([NotNull] Vhost vhost);
 
         /// <summary>
         /// Get an individual exchange by name
@@ -280,7 +281,7 @@ namespace EasyNetQ.Management.Client
         /// <param name="vhost">The virtual host that contains the exchange</param>
         /// <param name="ratesCriteria">Criteria for getting samples of rate data</param>
         /// <returns>The exchange</returns>
-        Exchange GetExchange(string exchangeName, Vhost vhost, GetRatesCriteria ratesCriteria = null);
+        Task<Exchange> GetExchangeAsync(string exchangeName, Vhost vhost, GetRatesCriteria ratesCriteria = null);
 
         /// <summary>
         /// Get an individual queue by name
@@ -290,50 +291,51 @@ namespace EasyNetQ.Management.Client
         /// <param name="lengthsCriteria">Criteria for getting samples of queue length data</param>
         /// <param name="ratesCriteria">Criteria for getting samples of rate data</param>
         /// <returns>The Queue</returns>
-        Queue GetQueue(string queueName, Vhost vhost, GetLengthsCriteria lengthsCriteria = null, GetRatesCriteria ratesCriteria = null);
+        Task<Queue> GetQueueAsync(string queueName, Vhost vhost, GetLengthsCriteria lengthsCriteria = null, GetRatesCriteria ratesCriteria = null);
 
         /// <summary>
         /// Get an individual vhost by name
         /// </summary>
         /// <param name="vhostName">The VHost</param>
-        Vhost GetVhost(string vhostName);
+        Task<Vhost> GetVhostAsync(string vhostName);
 
         /// <summary>
         /// Get a user by name
         /// </summary>
         /// <param name="userName">The name of the user</param>
         /// <returns>The User</returns>
-        User GetUser(string userName);
+        Task<User> GetUserAsync(string userName);
 
         /// <summary>
         /// Get collection of Policies on the cluster
         /// </summary>
         /// <returns>Policies</returns>
-        IEnumerable<Policy> GetPolicies();
+        Task<IEnumerable<Policy>> GetPoliciesAsync();
 
         /// <summary>
         /// Creates a policy on the cluster
         /// </summary>
         /// <param name="policy">Policy to create</param>
-        void CreatePolicy(Policy policy);
+        Task CreatePolicy([NotNull] Policy policy);
 
         /// <summary>
         /// Delete a policy from the cluster
         /// </summary>
         /// <param name="policyName">Policy name</param>
         /// <param name="vhost">vhost on which the policy resides</param>
-        void DeletePolicy(string policyName, Vhost vhost);
+        Task DeletePolicyAsync(string policyName, Vhost vhost);
 
         /// <summary>
         /// Get all parameters on the cluster
         /// </summary>
-        IEnumerable<Parameter> GetParameters();
+        Task<IEnumerable<Parameter>> GetParametersAsync();
 
         /// <summary>
         /// Creates a parameter on the cluster
         /// </summary>
+        /// <param name="parameter"></param>
         /// <param name="policy">Parameter to create</param>
-        void CreateParameter(Parameter parameter);
+        Task CreateParameterAsync(Parameter parameter);
 
         /// <summary>
         /// Delete a parameter from the cluster
@@ -341,7 +343,7 @@ namespace EasyNetQ.Management.Client
         /// <param name="componentName"></param>
         /// <param name="vhost"></param>
         /// <param name="name"></param>
-        void DeleteParameter(string componentName, string vhost, string name);
+        Task DeleteParameterAsync(string componentName, string vhost, string name);
 
     }
 }
