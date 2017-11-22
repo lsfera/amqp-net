@@ -11,7 +11,7 @@ namespace Amqp.Net.Tests
     {
         private const string DockerNetworkName = "bridgeWhaleNet";
         private const string RabbitImageName = "rabbitmq";
-        private const string RabbitImageTag = "management";
+        private const string RabbitImageTag = "management-alpine";
         private const string RabbitContainerName = "rmq";
         private const int DefaultTimeoutSeconds = 20;
 
