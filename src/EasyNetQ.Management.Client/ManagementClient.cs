@@ -22,11 +22,10 @@ namespace EasyNetQ.Management.Client
 
         public static readonly JsonSerializerSettings Settings;
 
-        private readonly string password;
         private readonly Action<HttpRequestMessage> configureRequest;
         private readonly TimeSpan defaultTimeout = TimeSpan.FromSeconds(20);
-        private readonly TimeSpan timeout;
         private readonly HttpClient httpClient;
+        private readonly Regex urlRegex = new Regex(@"^(http|https):\/\/.+\w$", RegexOptions.Compiled|RegexOptions.Singleline);
 
         static ManagementClient()
         {
@@ -58,8 +57,6 @@ namespace EasyNetQ.Management.Client
             Action<HttpRequestMessage> configureRequest = null,
             bool ssl = false)
         {
-            var urlRegex = new Regex(@"^(http|https):\/\/.+\w$");
-            Uri urlUri = null;
             if (string.IsNullOrEmpty(hostUrl))
             {
                 throw new ArgumentException("hostUrl is null or empty");
@@ -80,7 +77,7 @@ namespace EasyNetQ.Management.Client
                     throw new ArgumentException("hostUrl is illegal");
                 hostUrl = hostUrl.Contains("http://") ? hostUrl : "http://" + hostUrl;
             }
-            if (!urlRegex.IsMatch(hostUrl) || !Uri.TryCreate(hostUrl, UriKind.Absolute, out urlUri))
+            if (!urlRegex.IsMatch(hostUrl) || !Uri.TryCreate(hostUrl, UriKind.Absolute, out var urlUri))
             {
                 throw new ArgumentException("hostUrl is illegal");
             }
@@ -98,17 +95,17 @@ namespace EasyNetQ.Management.Client
             }
             HostUrl = hostUrl;
             Username = username;
-            this.password = password;
             PortNumber = portNumber;
-            this.timeout = timeout ?? defaultTimeout;
             this.configureRequest = configureRequest;
 
-            var messageHandler = new HttpClientHandler
+
+            httpClient = new HttpClient(new HttpClientHandler
             {
                 Credentials = new NetworkCredential(username, password)
+            })
+            {
+                Timeout = timeout ?? defaultTimeout
             };
-
-            httpClient = new HttpClient(messageHandler) {Timeout = this.timeout};
 
             //default WebRequest.KeepAlive to false to resolve spurious 'the request was aborted: the request was canceled' exceptions
             httpClient.DefaultRequestHeaders.Add("Connection", "close");
@@ -148,7 +145,7 @@ namespace EasyNetQ.Management.Client
 
         public Task<Channel> GetChannelAsync(string channelName, GetRatesCriteria ratesCriteria = null)
         {
-            return GetAsync<Channel>(string.Format("channels/{0}", channelName), ratesCriteria);
+            return GetAsync<Channel>($"channels/{channelName}", ratesCriteria);
         }
 
         public Task<IEnumerable<Exchange>> GetExchangesAsync()
@@ -158,15 +155,12 @@ namespace EasyNetQ.Management.Client
 
         public Task<Exchange> GetExchangeAsync(string exchangeName, Vhost vhost, GetRatesCriteria ratesCriteria = null)
         {
-            return GetAsync<Exchange>(string.Format("exchanges/{0}/{1}",
-                SanitiseVhostName(vhost.Name), exchangeName), ratesCriteria);
+            return GetAsync<Exchange>($"exchanges/{SanitiseVhostName(vhost.Name)}/{exchangeName}", ratesCriteria);
         }
 
-        public Task<Queue> GetQueueAsync(string queueName, Vhost vhost, GetLengthsCriteria lengthsCriteria = null,
-            GetRatesCriteria ratesCriteria = null)
+        public Task<Queue> GetQueueAsync(string queueName, Vhost vhost, GetLengthsCriteria lengthsCriteria = null, GetRatesCriteria ratesCriteria = null)
         {
-            return GetAsync<Queue>(string.Format("queues/{0}/{1}",
-                SanitiseVhostName(vhost.Name), SanitiseName(queueName)), lengthsCriteria, ratesCriteria);
+            return GetAsync<Queue>($"queues/{SanitiseVhostName(vhost.Name)}/{SanitiseName(queueName)}", lengthsCriteria, ratesCriteria);
         }
 
         public async Task<Exchange> CreateExchangeAsync(ExchangeInfo exchangeInfo, Vhost vhost)
@@ -180,9 +174,7 @@ namespace EasyNetQ.Management.Client
                 throw new ArgumentNullException(nameof(vhost));
             }
 
-            await PutAsync(
-                string.Format("exchanges/{0}/{1}", SanitiseVhostName(vhost.Name), SanitiseName(exchangeInfo.GetName())),
-                exchangeInfo).ConfigureAwait(false);
+            await PutAsync($"exchanges/{SanitiseVhostName(vhost.Name)}/{SanitiseName(exchangeInfo.GetName())}", exchangeInfo).ConfigureAwait(false);
 
             return await GetExchangeAsync(SanitiseName(exchangeInfo.GetName()), vhost).ConfigureAwait(false);
         }
@@ -191,23 +183,21 @@ namespace EasyNetQ.Management.Client
         {
             Ensure.ArgumentNotNull(exchange, nameof(exchange));
 
-            await DeleteAsync(string.Format("exchanges/{0}/{1}", SanitiseVhostName(exchange.Vhost), SanitiseName(exchange.Name))).ConfigureAwait(false);
+            await DeleteAsync($"exchanges/{SanitiseVhostName(exchange.Vhost)}/{SanitiseName(exchange.Name)}").ConfigureAwait(false);
         }
 
         public Task<IEnumerable<Binding>> GetBindingsWithSourceAsync(Exchange exchange)
         {
             Ensure.ArgumentNotNull(exchange, nameof(exchange));
 
-            return GetAsync<IEnumerable<Binding>>(string.Format("exchanges/{0}/{1}/bindings/source",
-                SanitiseVhostName(exchange.Vhost), exchange.Name));
+            return GetAsync<IEnumerable<Binding>>($"exchanges/{SanitiseVhostName(exchange.Vhost)}/{exchange.Name}/bindings/source");
         }
 
         public Task<IEnumerable<Binding>> GetBindingsWithDestinationAsync(Exchange exchange)
         {
             Ensure.ArgumentNotNull(exchange, nameof(exchange));
 
-            return GetAsync<IEnumerable<Binding>>(string.Format("exchanges/{0}/{1}/bindings/destination",
-                SanitiseVhostName(exchange.Vhost), exchange.Name));
+            return GetAsync<IEnumerable<Binding>>($"exchanges/{SanitiseVhostName(exchange.Vhost)}/{exchange.Name}/bindings/destination");
         }
 
         public Task<PublishResult> PublishAsync(Exchange exchange, PublishInfo publishInfo)
@@ -215,9 +205,7 @@ namespace EasyNetQ.Management.Client
             Ensure.ArgumentNotNull(exchange, nameof(exchange));
             Ensure.ArgumentNotNull(publishInfo, nameof(publishInfo));
 
-            return PostAsync<PublishInfo, PublishResult>(
-                $"exchanges/{SanitiseVhostName(exchange.Vhost)}/{exchange.Name}/publish",
-                publishInfo);
+            return PostAsync<PublishInfo, PublishResult>($"exchanges/{SanitiseVhostName(exchange.Vhost)}/{exchange.Name}/publish", publishInfo);
         }
 
         public Task<IEnumerable<Queue>> GetQueuesAsync()
@@ -230,9 +218,7 @@ namespace EasyNetQ.Management.Client
             Ensure.ArgumentNotNull(queueInfo, nameof(queueInfo));
             Ensure.ArgumentNotNull(vhost, nameof(vhost));
 
-            await PutAsync(
-                string.Format("queues/{0}/{1}", SanitiseVhostName(vhost.Name), SanitiseName(queueInfo.GetName())),
-                queueInfo).ConfigureAwait(false);
+            await PutAsync($"queues/{SanitiseVhostName(vhost.Name)}/{SanitiseName(queueInfo.GetName())}", queueInfo).ConfigureAwait(false);
 
             return await GetQueueAsync(queueInfo.GetName(), vhost).ConfigureAwait(false);
         }
@@ -263,8 +249,7 @@ namespace EasyNetQ.Management.Client
         {
             Ensure.ArgumentNotNull(queue, nameof(queue));
 
-            return PostAsync<GetMessagesCriteria, IEnumerable<Message>>(
-                $"queues/{SanitiseVhostName(queue.Vhost)}/{SanitiseName(queue.Name)}/get", criteria);
+            return PostAsync<GetMessagesCriteria, IEnumerable<Message>>($"queues/{SanitiseVhostName(queue.Vhost)}/{SanitiseName(queue.Name)}/get", criteria);
         }
 
         public Task<IEnumerable<Binding>> GetBindingsAsync()
@@ -279,9 +264,7 @@ namespace EasyNetQ.Management.Client
             Ensure.ArgumentNotNull(bindingInfo, nameof(bindingInfo));
 
             await PostAsync<BindingInfo, object>(
-                string.Format("bindings/{0}/e/{1}/q/{2}", SanitiseVhostName(queue.Vhost), exchange.Name,
-                    SanitiseName(queue.Name)),
-                bindingInfo).ConfigureAwait(false);
+                $"bindings/{SanitiseVhostName(queue.Vhost)}/e/{exchange.Name}/q/{SanitiseName(queue.Name)}", bindingInfo).ConfigureAwait(false);
         }
 
         public async Task CreateBinding(Exchange sourceExchange, Exchange destinationExchange, BindingInfo bindingInfo)
@@ -301,8 +284,7 @@ namespace EasyNetQ.Management.Client
             Ensure.ArgumentNotNull(queue, nameof(queue));
 
             return GetAsync<IEnumerable<Binding>>(
-                string.Format("bindings/{0}/e/{1}/q/{2}", SanitiseVhostName(queue.Vhost),
-                    exchange.Name, SanitiseName(queue.Name)));
+                $"bindings/{SanitiseVhostName(queue.Vhost)}/e/{exchange.Name}/q/{SanitiseName(queue.Name)}");
         }
 
         public Task<IEnumerable<Binding>> GetBindingsAsync(Exchange fromExchange, Exchange toExchange)
@@ -311,8 +293,7 @@ namespace EasyNetQ.Management.Client
             Ensure.ArgumentNotNull(toExchange, nameof(toExchange));
 
             return GetAsync<IEnumerable<Binding>>(
-                string.Format("bindings/{0}/e/{1}/e/{2}", SanitiseVhostName(toExchange.Vhost),
-                    fromExchange.Name, SanitiseName(toExchange.Name)));
+                $"bindings/{SanitiseVhostName(toExchange.Vhost)}/e/{fromExchange.Name}/e/{SanitiseName(toExchange.Name)}");
         }
 
         public async Task DeleteBindingAsync(Binding binding)
@@ -413,7 +394,7 @@ namespace EasyNetQ.Management.Client
         {
             Ensure.ArgumentNotNull(userInfo, nameof(userInfo));
 
-            await PutAsync(string.Format("users/{0}", userInfo.GetName()), userInfo).ConfigureAwait(false);
+            await PutAsync($"users/{userInfo.GetName()}", userInfo).ConfigureAwait(false);
 
             return await GetUserAsync(userInfo.GetName()).ConfigureAwait(false);
         }
@@ -422,7 +403,7 @@ namespace EasyNetQ.Management.Client
         {
             Ensure.ArgumentNotNull(user, nameof(user));
 
-            await DeleteAsync(string.Format("users/{0}", user.Name)).ConfigureAwait(false);
+            await DeleteAsync($"users/{user.Name}").ConfigureAwait(false);
         }
 
         public Task<IEnumerable<Permission>> GetPermissionsAsync()
@@ -434,9 +415,7 @@ namespace EasyNetQ.Management.Client
         {
             Ensure.ArgumentNotNull(permissionInfo, nameof(permissionInfo));
 
-            await PutAsync(string.Format("permissions/{0}/{1}",
-                    SanitiseVhostName(permissionInfo.GetVirtualHostName()),
-                    permissionInfo.GetUserName()),
+            await PutAsync($"permissions/{SanitiseVhostName(permissionInfo.GetVirtualHostName())}/{permissionInfo.GetUserName()}",
                 permissionInfo).ConfigureAwait(false);
         }
 
@@ -444,9 +423,7 @@ namespace EasyNetQ.Management.Client
         {
             Ensure.ArgumentNotNull(permission, nameof(permission));
 
-            await DeleteAsync(string.Format("permissions/{0}/{1}",
-                permission.Vhost,
-                permission.User)).ConfigureAwait(false);
+            await DeleteAsync($"permissions/{permission.Vhost}/{permission.User}").ConfigureAwait(false);
         }
 
         public async Task<User> ChangeUserPasswordAsync(string userName, string newPassword)
@@ -462,13 +439,16 @@ namespace EasyNetQ.Management.Client
             return await CreateUserAsync(userInfo).ConfigureAwait(false);
         }
 
+        public Task<List<Federation>> GetFederationAsync()
+        {
+            return GetAsync<List<Federation>>("federation-links");
+        }
+
         public async Task<bool> IsAliveAsync(Vhost vhost)
         {
             Ensure.ArgumentNotNull(vhost, nameof(vhost));
 
-            var result = await GetAsync<AlivenessTestResult>(string.Format("aliveness-test/{0}",
-                SanitiseVhostName(vhost.Name))).ConfigureAwait(false);
-
+            var result = await GetAsync<AlivenessTestResult>($"aliveness-test/{SanitiseVhostName(vhost.Name)}").ConfigureAwait(false);
             return result.Status == "ok";
         }
 
@@ -550,9 +530,7 @@ namespace EasyNetQ.Management.Client
                         throw new UnexpectedHttpStatusCodeException(response.StatusCode);
                     }
                     return Task.CompletedTask;
-
                 }).Unwrap();
-
         }
 
         private static void InsertRequestBody<T>(HttpRequestMessage request, T item)
@@ -569,12 +547,12 @@ namespace EasyNetQ.Management.Client
 
         private static string GetPolicyUrl(string policyName, string vhost)
         {
-            return string.Format("policies/{0}/{1}", SanitiseVhostName(vhost), policyName);
+            return $"policies/{SanitiseVhostName(vhost)}/{policyName}";
         }
 
         private static string GetParameterUrl(string componentName, string vhost, string parameterName)
         {
-            return string.Format("parameters/{0}/{1}/{2}", componentName, SanitiseVhostName(vhost), parameterName);
+            return $"parameters/{componentName}/{SanitiseVhostName(vhost)}/{parameterName}";
         }
 
         private static Task<T> DeserializeResponseAsync<T>(HttpResponseMessage response)
@@ -594,12 +572,11 @@ namespace EasyNetQ.Management.Client
         }
 
         private HttpRequestMessage CreateRequestForPath(string path, HttpMethod httpMethod,
-            object[] queryObjects = null)
+            IReadOnlyCollection<object> queryObjects = null)
         {
-            var endpointAddress = BuildEndpointAddress(path);
             var queryString = BuildQueryString(queryObjects);
 
-            var uri = new Uri(endpointAddress + queryString);
+            var uri = new Uri($"{HostUrl}:{PortNumber}/api/{path}{queryString}");
             var request = new HttpRequestMessage(httpMethod, uri);
 
             configureRequest(request);
@@ -607,18 +584,13 @@ namespace EasyNetQ.Management.Client
             return request;
         }
 
-        private string BuildEndpointAddress(string path)
-        {
-            return string.Format("{0}:{1}/api/{2}", HostUrl, PortNumber, path);
-        }
-
         // Very simple query-string builder. 
-        private string BuildQueryString(object[] queryObjects)
+        private static string BuildQueryString(IReadOnlyCollection<object> queryObjects)
         {
-            if (queryObjects == null || queryObjects.Length == 0)
+            if (queryObjects == null || queryObjects.Count == 0)
                 return string.Empty;
 
-            StringBuilder queryStringBuilder = new StringBuilder("?");
+            var queryStringBuilder = new StringBuilder("?");
             var first = true;
             // One or more query objects can be used to build the query
             foreach (var query in queryObjects)
@@ -632,9 +604,7 @@ namespace EasyNetQ.Management.Client
                     var name = Regex.Replace(prop.Name, "([a-z])([A-Z])", "$1_$2").ToLower();
                     var value = prop.GetValue(query, null);
                     if (!first)
-                    {
                         queryStringBuilder.Append("&");
-                    }
                     queryStringBuilder.AppendFormat("{0}={1}", name, value ?? string.Empty);
                     first = false;
                 }

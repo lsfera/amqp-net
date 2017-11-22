@@ -345,5 +345,10 @@ namespace EasyNetQ.Management.Client
         /// <param name="name"></param>
         Task DeleteParameterAsync(string componentName, string vhost, string name);
 
+        /// <summary>
+        /// Get list of federations
+        /// </summary>
+        /// <returns></returns>
+        Task<List<Federation>> GetFederationAsync();
     }
 }

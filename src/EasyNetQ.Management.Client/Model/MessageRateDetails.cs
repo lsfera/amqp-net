@@ -17,5 +17,4 @@ namespace EasyNetQ.Management.Client.Model
 
         public List<MessageRateSample> Samples { get; set; }
     }
-
 }

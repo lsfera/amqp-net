@@ -11,5 +11,4 @@ namespace EasyNetQ.Management.Client.Model
         [JsonConverter(typeof(UnixMsDateTimeConverter))]
         public DateTime Timestamp { get; set; }
     }
-
 }

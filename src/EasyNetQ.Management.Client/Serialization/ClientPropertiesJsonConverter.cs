@@ -147,6 +147,5 @@ namespace EasyNetQ.Management.Client.Serialization
             }
             return char.ToUpper(str[0]) + str.Substring(1, str.Length - 1);
         }
-
     }
 }
